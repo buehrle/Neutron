@@ -14,12 +14,15 @@ public class Main {
 			ServerSocket server = new ServerSocket(CONST_PORT);
 			ExecutorService executor = Executors.newFixedThreadPool(CONST_MAX_CLIENTS);
 			
+			System.out.println("Server started.");
+			
 			while (true) {
 				Socket clientSocket = server.accept();
 				
 				executor.execute(new Client(clientSocket));
 			}
 		} catch (Exception e) {
+			System.out.println("SERVER1");
 			e.printStackTrace();
 		}
 
