@@ -11,8 +11,6 @@ import java.security.spec.InvalidKeySpecException;
 import com.erdlof.neutron.util.CryptoUtils;
 
 public class Client implements Runnable {
-	private boolean isCloseRequested = false;
-	
 	private Socket clientSocket;
 	private DataInputStream clientInput;
 	private DataOutputStream clientOutput;
@@ -37,10 +35,14 @@ public class Client implements Runnable {
 			clientOutput.flush();
 			
 			byte[] clientName_ = null;
-			clientInput.read(clientName_); // get the clients nickname
+			clientInput.read(clientName_); // get the client's nickname
 			clientName = new String(clientName_, "UTF-8");
 			
 			while(!Thread.currentThread().isInterrupted()) {
+				byte[] tempMessage = null;
+				if (clientInput.read(tempMessage) != -1) {
+					Main.textMessageReceived(this, new String(tempMessage, "UTF-8"));
+				}
 				
 			}
 			
@@ -51,6 +53,9 @@ public class Client implements Runnable {
 			e.printStackTrace();
 		}
 	}
-
+	
+	public String getClientName() {
+		return clientName;
+	}
 
 }

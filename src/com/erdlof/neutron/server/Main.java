@@ -5,7 +5,7 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class Main implements ClientEventListener {
+public class Main {
 	private static final int CONST_PORT = 12345; //TODO: get this into an external config file
 	private static final int CONST_MAX_CLIENTS = 30; //TODO: and this also.
 
@@ -25,9 +25,8 @@ public class Main implements ClientEventListener {
 
 	}
 
-	@Override
-	public synchronized void textMessageReceived(Client client) {
-		
+	public static synchronized void textMessageReceived(Client client, String message) {
+		System.out.println(client.getClientName() + ": " + message);
 	}
 	
 	
