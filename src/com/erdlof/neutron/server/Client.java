@@ -45,16 +45,13 @@ public class Client implements Runnable {
 			clientKeyOutput.write(Main.getServerKeyPair().getPublic().getEncoded()); // this sends the server's public key to the client
 			clientKeyOutput.flush();
 
-//			clientKeyInput.close(); //we don't need them anymore ;(
-//			clientKeyOutput.close();
-			
 			inputCipher = Cipher.getInstance("RSA");
 			outputCipher = Cipher.getInstance("RSA");
 			inputCipher.init(Cipher.DECRYPT_MODE, Main.getServerKeyPair().getPrivate());
 			outputCipher.init(Cipher.ENCRYPT_MODE, publicKey);
 			
-			clientCipheredInput = new CipherInputStream(clientSocket.getInputStream(), inputCipher); // create the encrypted streams with the keys we just exchanged, cipher needed
-			clientCipheredOutput = new CipherOutputStream(clientSocket.getOutputStream(), outputCipher);
+			clientCipheredInput = new CipherInputStream(clientKeyInput, inputCipher); // create the encrypted streams with the keys we just exchanged, cipher needed
+			clientCipheredOutput = new CipherOutputStream(clientKeyOutput, outputCipher);
 			
 			byte[] clientName_ = new byte[getLengthOfFollowingData(clientCipheredInput)];
 			clientCipheredInput.read(clientName_); // get the client's nickname
