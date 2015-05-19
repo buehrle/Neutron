@@ -3,34 +3,54 @@ package com.erdlof.neutron.client;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PublicKey;
 
-import com.erdlof.neutron.util.RequestedAction;
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+
+import com.erdlof.neutron.util.CryptoUtils;
 
 public class Main {
-
+	private static PublicKey serverPublicKey;
+	
 	public static void main(String[] args) {
 		try {
 			Socket client = new Socket("localhost", 12345);
-			DataInputStream input = new DataInputStream(client.getInputStream());
-			DataOutputStream output = new DataOutputStream(client.getOutputStream());
+			DataInputStream keyInput = new DataInputStream(client.getInputStream());
+			DataOutputStream keyOutput = new DataOutputStream(client.getOutputStream());
 			
-			output.writeInt(1);
-			output.writeByte(1);
-			output.flush();
+			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA"); //generate the keys
+			keyGen.initialize(1024);
+			KeyPair clientKeyPair = keyGen.generateKeyPair();
+
+			keyOutput.write(CryptoUtils.intToByteArray(clientKeyPair.getPublic().getEncoded().length));
+			keyOutput.write(clientKeyPair.getPublic().getEncoded());
+			keyOutput.flush();
+
+			byte[] serverPublicKeyLength = new byte[4];
+			keyInput.read(serverPublicKeyLength);
+			byte[] serverPublicKeyByte = new byte[CryptoUtils.byteArrayToInt(serverPublicKeyLength)];
+			keyInput.read(serverPublicKeyByte);
+			serverPublicKey = CryptoUtils.getPublicKeyFromEncoded(serverPublicKeyByte);
+
+//			keyInput.close();
+//			keyOutput.close();
 			
-			input.read();
+			Cipher inputCipher = Cipher.getInstance("RSA");
+			Cipher outputCipher = Cipher.getInstance("RSA");
+			inputCipher.init(Cipher.DECRYPT_MODE, clientKeyPair.getPrivate());
+			outputCipher.init(Cipher.ENCRYPT_MODE, serverPublicKey);
 			
-			String tempName = "Herbert";
-			output.writeInt(tempName.getBytes().length);
-			output.write(tempName.getBytes());
+			CipherInputStream clientCipheredInput = new CipherInputStream(client.getInputStream(), inputCipher); //TODO create the encrypted streams with the keys we just exchanged, cipher needed
+			CipherOutputStream clientCipheredOutput = new CipherOutputStream(client.getOutputStream(), outputCipher);
 			
-			while (true) {
-				output.write(0);
-				String tempMessage = "Hi";
-				output.writeInt(tempMessage.getBytes().length);
-				output.write(tempMessage.getBytes());
-				output.flush();
-			}
+			final String name = "Herbert";
+			clientCipheredOutput.write(CryptoUtils.intToByteArray(name.getBytes().length));
+			clientCipheredOutput.write(name.getBytes());
+			clientCipheredOutput.flush();
 			
 		} catch (Exception e) {
 			System.out.println("CLIENT");

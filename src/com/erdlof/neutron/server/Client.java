@@ -3,10 +3,9 @@ package com.erdlof.neutron.server;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -38,30 +37,26 @@ public class Client implements Runnable {
 			clientKeyInput = new DataInputStream(clientSocket.getInputStream());
 			clientKeyOutput = new DataOutputStream(clientSocket.getOutputStream());		
 			
-			byte[] encodedKeyLength = new byte[8];
-			clientKeyInput.read(encodedKeyLength);
-			byte[] encodedKey = new byte[CryptoUtils.byteArrayToInt(encodedKeyLength)];
+			byte[] encodedKey = new byte[getLengthOfFollowingData(clientKeyInput)];
 			clientKeyInput.read(encodedKey);
 			publicKey = CryptoUtils.getPublicKeyFromEncoded(encodedKey); // get the client's public key from a byte array
-			
+
 			clientKeyOutput.write(CryptoUtils.intToByteArray(Main.getServerKeyPair().getPublic().getEncoded().length));
-			clientKeyOutput.write(Main.getServerKeyPair().getPublic().getEncoded()); //TODO this sends the server's public key to the client
+			clientKeyOutput.write(Main.getServerKeyPair().getPublic().getEncoded()); // this sends the server's public key to the client
 			clientKeyOutput.flush();
-			
-			clientKeyInput.close(); //we don't need them anymore ;(
-			clientKeyOutput.close();
+
+//			clientKeyInput.close(); //we don't need them anymore ;(
+//			clientKeyOutput.close();
 			
 			inputCipher = Cipher.getInstance("RSA");
 			outputCipher = Cipher.getInstance("RSA");
 			inputCipher.init(Cipher.DECRYPT_MODE, Main.getServerKeyPair().getPrivate());
 			outputCipher.init(Cipher.ENCRYPT_MODE, publicKey);
 			
-			clientCipheredInput = new CipherInputStream(clientSocket.getInputStream(), inputCipher); //TODO create the encrypted streams with the keys we just exchanged, cipher needed
+			clientCipheredInput = new CipherInputStream(clientSocket.getInputStream(), inputCipher); // create the encrypted streams with the keys we just exchanged, cipher needed
 			clientCipheredOutput = new CipherOutputStream(clientSocket.getOutputStream(), outputCipher);
 			
-			byte[] clientNameLength = new byte[8]; //read the length of the client's name as 8 byte
-			clientCipheredInput.read(clientNameLength);
-			byte[] clientName_ = new byte[CryptoUtils.byteArrayToInt(clientNameLength)];
+			byte[] clientName_ = new byte[getLengthOfFollowingData(clientCipheredInput)];
 			clientCipheredInput.read(clientName_); // get the client's nickname
 			clientName = new String(clientName_, "UTF-8");
 			
@@ -71,10 +66,7 @@ public class Client implements Runnable {
 					
 					switch (request) { //what does the client want???
 						case RequestedAction.SEND_TEXT:
-							byte[] tempMessageLength = new byte [8];
-							clientCipheredInput.read(tempMessageLength);
-							
-							byte[] tempMessage = new byte[CryptoUtils.byteArrayToInt(tempMessageLength)];
+							byte[] tempMessage = new byte[getLengthOfFollowingData(clientCipheredInput)];
 							if (clientCipheredInput.read(tempMessage) != -1) {
 								Main.textMessageReceived(this, new String(tempMessage, "UTF-8"));
 							}				
@@ -90,8 +82,15 @@ public class Client implements Runnable {
 			clientCipheredOutput.close();
 			clientSocket.close();
 		} catch (Exception e) {
+			System.out.println("SERVER");
 			e.printStackTrace();
 		}
+	}
+	
+	private int getLengthOfFollowingData(InputStream stream) throws IOException {
+		byte[] lengthTemp = new byte[4];
+		stream.read(lengthTemp);
+		return CryptoUtils.byteArrayToInt(lengthTemp);
 	}
 	
 	public String getClientName() {
