@@ -24,11 +24,13 @@ public class Main {
 			output.writeInt(tempName.getBytes().length);
 			output.write(tempName.getBytes());
 			
-			output.write(0);
-			String tempMessage = "Hi, ich mag Züge";
-			output.writeInt(tempMessage.getBytes().length);
-			output.write(tempMessage.getBytes());
-			output.flush();
+			while (true) {
+				output.write(0);
+				String tempMessage = "Hi";
+				output.writeInt(tempMessage.getBytes().length);
+				output.write(tempMessage.getBytes());
+				output.flush();
+			}
 			
 		} catch (Exception e) {
 			System.out.println("CLIENT");
