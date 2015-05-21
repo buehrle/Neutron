@@ -11,14 +11,9 @@ public class Main {
 	private static final int CONST_PORT = 12345; //TODO: get this into an external config file
 	private static final int CONST_MAX_CLIENTS = 30; //TODO: and this also.
 	private static ServerSocket server;
-	private static KeyPair serverKeyPair;
 	
 	public static void main(String[] args) {
 		try {
-			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA"); //generate the keys
-			keyGen.initialize(1024);
-			serverKeyPair = keyGen.generateKeyPair();
-			
 			server = new ServerSocket(CONST_PORT);
 			ExecutorService executor = Executors.newFixedThreadPool(CONST_MAX_CLIENTS);
 			
@@ -33,10 +28,6 @@ public class Main {
 			e.printStackTrace();
 		}
 
-	}
-	
-	public static synchronized KeyPair getServerKeyPair() {
-		return serverKeyPair;
 	}
 	
 	public static synchronized void textMessageReceived(Client client, String message) {
