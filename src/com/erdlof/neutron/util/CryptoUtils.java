@@ -3,6 +3,7 @@ package com.erdlof.neutron.util;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 
@@ -26,6 +27,13 @@ public class CryptoUtils {
 	        (byte) ((a >> 8) & 0xFF),   
 	        (byte) (a & 0xFF)
 	    };
+	}
+	
+	public static byte[] createTotallyRandomIV() {
+		byte[] tempIV = new byte[16];
+		SecureRandom random = new SecureRandom();
+		random.nextBytes(tempIV);
+		return tempIV;
 	}
 
 }

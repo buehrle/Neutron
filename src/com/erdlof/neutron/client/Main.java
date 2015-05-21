@@ -13,56 +13,57 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
+import com.erdlof.neutron.server.BetterDataInputStream;
+import com.erdlof.neutron.server.BetterDataOutputStream;
+import com.erdlof.neutron.server.DataCipherInputStream;
+import com.erdlof.neutron.server.DataCipherOutputStream;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.RequestedAction;
 
 public class Main {
-	static CipherOutputStream clientCipheredOutput;
+	static DataCipherOutputStream clientCipheredOutput;
+	static DataCipherInputStream clientCipheredInput;
+	static BetterDataInputStream serverInitInput;
+	static BetterDataOutputStream serverInitOutput;
+	
+	static KeyPair keyPair;
+	static byte[] IV;
+	
 	public static void main(String[] args) {
 		try {
 			Socket client = new Socket("localhost", 12345);
-			DataInputStream serverInitInput = new DataInputStream(client.getInputStream());
-			DataOutputStream serverInitOutput = new DataOutputStream(client.getOutputStream());
+			serverInitInput = new BetterDataInputStream(client.getInputStream());
+			serverInitOutput = new BetterDataOutputStream(client.getOutputStream());
 			
 			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA"); //generate the keys
 			SecureRandom random = new SecureRandom();
 			keyGen.initialize(2048, random);
-			KeyPair keyPair = keyGen.generateKeyPair();
+			keyPair = keyGen.generateKeyPair();
 			
-			byte[] encodedPublicKey = keyPair.getPublic().getEncoded();
+			serverInitOutput.sendBytes(keyPair.getPublic().getEncoded());
 
-			serverInitOutput.write(CryptoUtils.intToByteArray(encodedPublicKey.length));
-			serverInitOutput.write(encodedPublicKey);
-			serverInitOutput.flush();
-
-			byte[] wrappedKeyLength = new byte[4];
-			serverInitInput.read(wrappedKeyLength);
-			byte[] wrappedKey = new byte[CryptoUtils.byteArrayToInt(wrappedKeyLength)];
-			serverInitInput.read(wrappedKey);
+			byte[] wrappedKey = serverInitInput.getBytes();
+			
+			IV = serverInitInput.getBytes();
 
 			Cipher unwrapCipher = Cipher.getInstance("RSA");
 			unwrapCipher.init(Cipher.UNWRAP_MODE, keyPair.getPrivate());
-			Key secretKey = unwrapCipher.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
+			SecretKey secretKey = (SecretKey) unwrapCipher.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
 
-			Cipher inputCipher = Cipher.getInstance("AES/CBC/NoPadding");
-			Cipher outputCipher = Cipher.getInstance("AES/CBC/NoPadding");
-			inputCipher.init(Cipher.DECRYPT_MODE, secretKey);
-			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey);
+			Cipher inputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+			Cipher outputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
+			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			
-			CipherInputStream clientCipheredInput = new CipherInputStream(serverInitInput, inputCipher);
-			clientCipheredOutput = new CipherOutputStream(serverInitOutput, outputCipher);
+			clientCipheredInput = new DataCipherInputStream(serverInitInput, inputCipher);
+			clientCipheredOutput = new DataCipherOutputStream(serverInitOutput, outputCipher);
 			
 
-			final String name = "1111111111111111";
-			clientCipheredOutput.write(name.getBytes().length);
-			clientCipheredOutput.write(name.getBytes());
-			clientCipheredOutput.flush();
+			byte[] test = new byte[16];
+			clientCipheredOutput.sendBytes(test);
 			
-//			clientCipheredOutput.write(RequestedAction.SEND_TEXT);
-//			final String hi = "Ich mag Schokolade.";
-//			clientCipheredOutput.write(CryptoUtils.intToByteArray(hi.getBytes().length));
-//			clientCipheredOutput.write(hi.getBytes());
 //			
 		} catch (Exception e) {
 			System.out.println("CLIENT");
