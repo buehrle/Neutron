@@ -2,8 +2,6 @@ package com.erdlof.neutron.server;
 
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

@@ -35,5 +35,33 @@ public class CryptoUtils {
 		random.nextBytes(tempIV);
 		return tempIV;
 	}
+	
+	public static byte[] fillUpWithZerosAndData(byte[] actualData, int lengthOfResult) {
+		if (lengthOfResult < actualData.length) return null;
+		
+		byte[] tempResult = new byte[lengthOfResult];
+		
+		for (int i = 0; i < actualData.length; i++) {
+			tempResult[i] = actualData[i];
+		}
+		
+		for (int i = lengthOfResult - actualData.length - 1; i < lengthOfResult; i++) {
+			tempResult[i] = 0;
+		}
+		
+		return tempResult;
+	}
+	
+	public static byte[] cutZeros(byte[] filledData, int expectedLength) {
+		if (expectedLength > filledData.length) return null;
+		
+		byte [] tempResult = new byte[expectedLength];
+		
+		for (int i = 0; i < expectedLength; i++) {
+			tempResult[i] = filledData[i];
+		}
+		
+		return tempResult;
+	}
 
 }
