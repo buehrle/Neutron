@@ -44,5 +44,14 @@ public class BetterDataInputStream extends DataInputStream {
 
 		return inputCipher.doFinal(tempData);
 	}
+	
+	public int getRequest() throws IOException, IllegalBlockSizeException, BadPaddingException {
+		if (inputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
+		
+		byte[] cipheredRequest = new byte[16];
+		super.read(cipheredRequest);
+		
+		return CryptoUtils.byteArrayToInt(inputCipher.doFinal(cipheredRequest));
+	}
 
 }

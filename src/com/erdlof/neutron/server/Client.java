@@ -70,7 +70,7 @@ public class Client implements Runnable {
 			
 			while(!Thread.currentThread().isInterrupted()) {
 				if (clientInput.available() > 0) {
-					int request = clientInput.read(); //TODO add decryption here, maybe new function in input stream
+					int request = clientInput.getRequest();
 					
 					switch (request) { //what does the client want???
 						case RequestedAction.SEND_TEXT:

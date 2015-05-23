@@ -10,6 +10,7 @@ import javax.crypto.spec.IvParameterSpec;
 
 import com.erdlof.neutron.server.BetterDataInputStream;
 import com.erdlof.neutron.server.BetterDataOutputStream;
+import com.erdlof.neutron.util.RequestedAction;
 
 public class Main {
 	static BetterDataInputStream serverInput;
@@ -49,7 +50,10 @@ public class Main {
 			serverInput.initCipher(inputCipher);
 			serverOutput.initCipher(outputCipher);
 			
-			serverOutput.sendBytesEncrypted("Zügfgdfgdfgdffdgdfgdfgdfgdfgdfgdfgdfge".getBytes());
+			serverOutput.sendBytesEncrypted("bertHerbertHerbertHerbertertff".getBytes());
+			serverOutput.sendRequest(RequestedAction.SEND_TEXT);
+			serverOutput.sendBytesEncrypted("Herbert sagt Hallo.".getBytes());
+			
 //			
 		} catch (Exception e) {
 			System.out.println("CLIENT");
