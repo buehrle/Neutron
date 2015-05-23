@@ -34,9 +34,9 @@ public class Client implements Runnable {
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
 			
 			keyGen.init(256);
-			secretKey = keyGen.generateKey();
+			secretKey = keyGen.generateKey(); //generate the AES-key we will use to communicate
 			
-			IV = CryptoUtils.createTotallyRandomIV();
+			IV = CryptoUtils.createTotallyRandomIV(); //if you know what an IV is, good, otherwise please google q:
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -52,17 +52,17 @@ public class Client implements Runnable {
 
 			wrapCipher = Cipher.getInstance("RSA");
 			wrapCipher.init(Cipher.WRAP_MODE, publicKey);
-			byte[] wrappedKey = wrapCipher.wrap(secretKey);
+			byte[] wrappedKey = wrapCipher.wrap(secretKey); //we wrap the AES-key with a public RSA-key from the client to transfer it securely
 			clientOutput.sendBytes(wrappedKey);
 			
-			clientOutput.sendBytes(IV);
+			clientOutput.sendBytes(IV); //it does what it seems to do.
 
-			inputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-			outputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+			inputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING"); //the cipher for decrypting data from the client
+			outputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING"); //encrypting
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			
-			clientInput.initCipher(inputCipher);
+			clientInput.initCipher(inputCipher); //give our sweet BetterDataInputStream what it wants to be able to decrypt. ^.^
 			clientOutput.initCipher(outputCipher);
 			
 			clientName = new String(clientInput.getBytesDecrypted(), "UTF-8");

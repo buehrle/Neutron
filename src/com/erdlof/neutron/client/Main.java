@@ -23,6 +23,7 @@ public class Main {
 	
 	public static void main(String[] args) {
 		try {
+			//THIS IS JUST TESTING CODE AND NOT INTENDED FOR LOOKING AT IT. PLEASE GO AWAY OR READ VERY CAREFULLY.
 			@SuppressWarnings("resource")
 			Socket client = new Socket("localhost", 12345);
 			serverInput = new BetterDataInputStream(client.getInputStream());

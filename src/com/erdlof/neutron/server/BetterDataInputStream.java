@@ -21,7 +21,7 @@ public class BetterDataInputStream extends DataInputStream {
 		this.inputCipher = inputCipher;
 	}
 	
-	public byte[] getBytes() throws IOException {
+	public byte[] getBytes() throws IOException { //read a number of bytes (with forwarded length) from the network and return it.
 		byte[] lengthTemp = new byte[4];
 		super.read(lengthTemp);
 		
@@ -31,7 +31,7 @@ public class BetterDataInputStream extends DataInputStream {
 		return tempData;
 	}
 	
-	public byte[] getBytesDecrypted() throws  IllegalBlockSizeException, BadPaddingException, IOException {
+	public byte[] getBytesDecrypted() throws  IllegalBlockSizeException, BadPaddingException, IOException { //does the same as getBytes() but it also uses the cipher to decrypt the data
 		if (inputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
 		
 		byte[] lengthTempCiphered = new byte[16];
