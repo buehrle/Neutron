@@ -1,5 +1,6 @@
 package com.erdlof.neutron.util;
 
+import java.nio.ByteBuffer;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -14,19 +15,19 @@ public class CryptoUtils {
 	}
 	
 	public static int byteArrayToInt(byte[] b) {
-	    return   b[3] & 0xFF |
-	            (b[2] & 0xFF) << 8 |
-	            (b[1] & 0xFF) << 16 |
-	            (b[0] & 0xFF) << 24;
+		return ByteBuffer.wrap(b).getInt();
 	}
 
 	public static byte[] intToByteArray(int a){
-	    return new byte[] {
-	        (byte) ((a >> 24) & 0xFF),
-	        (byte) ((a >> 16) & 0xFF),   
-	        (byte) ((a >> 8) & 0xFF),   
-	        (byte) (a & 0xFF)
-	    };
+		return ByteBuffer.allocate(4).putInt(a).array();
+	}
+	
+	public static byte[] longToByteArray(long a) {
+		return ByteBuffer.allocate(8).putLong(a).array();
+	}
+	
+	public static long byteArrayToLong(byte[] b) {
+		return ByteBuffer.wrap(b).getLong();
 	}
 	
 	public static byte[] createTotallyRandomIV() {

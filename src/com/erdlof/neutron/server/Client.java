@@ -59,17 +59,17 @@ public class Client implements Runnable {
 						
 						switch (request) { //what does the client want???
 							case Request.SEND_TEXT:
-								Main.textMessageReceived(this, new String(clientInput.getBytesDecrypted(), "UTF-8"));		
+								Main.sendToAllClients(request, clientInput.getBytesDecrypted(), clientID);		
 								break;
 							case Request.REGULAR_DISCONNECT:
 								System.out.println("Regular disconnect.");
-								Thread.currentThread().interrupt();
+								performShutdown(); //ask the current loop to exit and all close all resources
 								break;
 							case Request.ALIVE: //the client has to confirm that it's alive
 								break;
 							default: 
 								clientOutput.sendRequest(Request.ILLEGAL_REQUEST);
-								Thread.currentThread().interrupt();
+								performShutdown(); //ask the current loop to exit and all close all resources
 								break;
 						}
 						
@@ -82,7 +82,7 @@ public class Client implements Runnable {
 					
 				} else {
 					System.out.println("Client did not respond for too long. Closing connection");
-					Thread.currentThread().interrupt();
+					performShutdown(); //ask the current loop to exit and all close all resources
 				}
 			}
 		} catch (Exception e) {
@@ -102,6 +102,7 @@ public class Client implements Runnable {
 			}
 		}
 		
+		Main.unregisterClient(this); //the fact that this is executed on the end of the thread MAY cause an exception, but that's okay
 	}
 	
 	private void initConnection() {
@@ -130,8 +131,12 @@ public class Client implements Runnable {
 			System.out.println("Just logged in: " + clientName);
 		} catch (Exception e) {
 			System.out.println("Unexpected error while initializing connection.");
-			Thread.currentThread().interrupt();
+			performShutdown(); //ask the current loop to exit and all close all resources
 		}
+	}
+	
+	public synchronized void performShutdown() {
+		Thread.currentThread().interrupt();
 	}
 
 	public String getClientName() {
@@ -140,5 +145,26 @@ public class Client implements Runnable {
 
 	public long getClientID() {
 		return clientID;
+	}
+	
+	public void sendToClientFromID(int request, byte[] data, long senderID) { //the ID represents the SENDER of the data
+		try {
+			clientOutput.sendRequest(request);
+			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(senderID));
+			clientOutput.sendBytesEncrypted(data);
+		} catch (Exception e) {
+			e.printStackTrace();
+			performShutdown(); //ask the current loop to exit and all close all resources
+		}
+	}
+	
+	public void sendToClientFromID(int request, long senderID) { //the ID represents the SENDER of the data
+		try {
+			clientOutput.sendRequest(request);
+			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(senderID));
+		} catch (Exception e) {
+			e.printStackTrace();
+			performShutdown(); //ask the current loop to exit and all close all resources
+		}
 	}
 }

@@ -3,15 +3,20 @@ package com.erdlof.neutron.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.erdlof.neutron.util.Request;
 
 public class Main {
 	private static final int CONST_PORT = 12345; //TODO: get this into an external config file
 	private static ServerSocket server;
 	private static ExecutorService executor;
 	private static Random clientIDCreator;
+	private static List<Client> activeClients = new ArrayList<Client>();
 	
 	public static void main(String[] args) {
 		
@@ -22,7 +27,9 @@ public class Main {
 			while (true) {
 				Socket clientSocket = server.accept(); // wait for a connection
 				
-				executor.execute(new Client(clientSocket, clientIDCreator.nextLong()));
+				Client client = new Client(clientSocket, clientIDCreator.nextLong());
+				activeClients.add(client);
+				executor.execute(client);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -35,7 +42,20 @@ public class Main {
 		clientIDCreator = new Random();
 	}
 	
-	public static synchronized void textMessageReceived(Client client, String message) {
-		System.out.println(client.getClientName() + ": " + message);
+	public static synchronized void sendToAllClients(int request, byte[] data, long senderID) { //sends the data to all clients
+		for (Client client : activeClients) {
+			client.sendToClientFromID(request, data, senderID);
+		}
+	}
+	
+	public static synchronized void sendToAllClients(int request, long senderID) { //sends the data to all clients
+		for (Client client : activeClients) {
+			client.sendToClientFromID(request, senderID);
+		}
+	}
+	
+	public static synchronized void unregisterClient(Client client) {
+		activeClients.remove(client);
+		sendToAllClients(Request.CLIENT_DISCONNECT_NOTIFICATION, client.getClientID());
 	}
 }
