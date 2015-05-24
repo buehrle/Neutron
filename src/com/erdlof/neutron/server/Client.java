@@ -10,10 +10,12 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
 import com.erdlof.neutron.util.CryptoUtils;
-import com.erdlof.neutron.util.RequestedAction;
+import com.erdlof.neutron.util.Request;
 
 public class Client implements Runnable {
 	private Socket clientSocket;
+	private int timeoutCounter;
+	private static final int MAX_COUNTS_UNTIL_TIMEOUT = 1000;
 	private BetterDataInputStream clientInput;
 	private BetterDataOutputStream clientOutput;
 	
@@ -22,13 +24,16 @@ public class Client implements Runnable {
 	private Cipher inputCipher;
 	
 	private String clientName;
+	private long clientID;
 	private PublicKey publicKey; //the CLIENT'S public key
 	private SecretKey secretKey;
 	
 	private byte[] IV;
 	
-	public Client(Socket clientSocket) throws IOException {
+	public Client(Socket clientSocket, long clientID) throws IOException {
+		this.clientID = clientID;
 		this.clientSocket = clientSocket;
+		timeoutCounter = 0;
 		
 		try {
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
@@ -44,19 +49,75 @@ public class Client implements Runnable {
 	
 	@Override
 	public void run() {
+		initConnection();
+		
+		try {
+			while(!Thread.currentThread().isInterrupted()) {
+				if (timeoutCounter <= MAX_COUNTS_UNTIL_TIMEOUT) {
+					if (clientInput.available() > 0) {
+						int request = clientInput.getRequest();
+						
+						switch (request) { //what does the client want???
+							case Request.SEND_TEXT:
+								Main.textMessageReceived(this, new String(clientInput.getBytesDecrypted(), "UTF-8"));		
+								break;
+							case Request.REGULAR_DISCONNECT:
+								System.out.println("Regular disconnect.");
+								Thread.currentThread().interrupt();
+								break;
+							case Request.ALIVE: //the client has to confirm that it's alive
+								break;
+							default: 
+								clientOutput.sendRequest(Request.ILLEGAL_REQUEST);
+								Thread.currentThread().interrupt();
+								break;
+						}
+						
+						timeoutCounter = 0;
+					} else {
+						timeoutCounter++;
+					}
+					
+					if (!Thread.currentThread().isInterrupted()) Thread.sleep(10); // otherwise we would consume too much resources
+					
+				} else {
+					System.out.println("Client did not respond for too long. Closing connection");
+					Thread.currentThread().interrupt();
+				}
+			}
+		} catch (Exception e) {
+			try {
+				clientOutput.sendRequest(Request.UNEXPECTED_ERROR);
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+			e.printStackTrace();
+		} finally {
+			try {
+				clientInput.close();
+				clientOutput.close();
+				clientSocket.close();			
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	private void initConnection() {
 		try {
 			clientInput = new BetterDataInputStream(clientSocket.getInputStream());
 			clientOutput = new BetterDataOutputStream(clientSocket.getOutputStream());
 			
 			publicKey = CryptoUtils.getPublicKeyFromEncoded(clientInput.getBytes()); // get the client's public key from a byte array
-
+	
 			wrapCipher = Cipher.getInstance("RSA");
 			wrapCipher.init(Cipher.WRAP_MODE, publicKey);
 			byte[] wrappedKey = wrapCipher.wrap(secretKey); //we wrap the AES-key with a public RSA-key from the client to transfer it securely
 			clientOutput.sendBytes(wrappedKey);
 			
 			clientOutput.sendBytes(IV); //it does what it seems to do.
-
+	
 			inputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING"); //the cipher for decrypting data from the client
 			outputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING"); //encrypting
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
@@ -67,28 +128,9 @@ public class Client implements Runnable {
 			
 			clientName = new String(clientInput.getBytesDecrypted(), "UTF-8");
 			System.out.println("Just logged in: " + clientName);
-			
-			while(!Thread.currentThread().isInterrupted()) {
-				if (clientInput.available() > 0) {
-					int request = clientInput.getRequest();
-					
-					switch (request) { //what does the client want???
-						case RequestedAction.SEND_TEXT:
-							Main.textMessageReceived(this, new String(clientInput.getBytesDecrypted(), "UTF-8"));		
-							break;
-						default: 
-							Thread.currentThread().interrupt();
-							break;
-					}
-				}
-			}
-			
-			clientInput.close();
-			clientOutput.close();
-			clientSocket.close();
 		} catch (Exception e) {
-			System.out.println("SERVER");
-			e.printStackTrace();
+			System.out.println("Unexpected error while initializing connection.");
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -96,4 +138,7 @@ public class Client implements Runnable {
 		return clientName;
 	}
 
+	public long getClientID() {
+		return clientID;
+	}
 }

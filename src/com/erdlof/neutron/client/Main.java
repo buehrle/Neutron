@@ -10,18 +10,32 @@ import javax.crypto.spec.IvParameterSpec;
 
 import com.erdlof.neutron.server.BetterDataInputStream;
 import com.erdlof.neutron.server.BetterDataOutputStream;
-import com.erdlof.neutron.util.RequestedAction;
+import com.erdlof.neutron.util.Request;
 
-public class Main {
-	static BetterDataInputStream serverInput;
-	static BetterDataOutputStream serverOutput;
-	static Cipher inputCipher;
-	static Cipher outputCipher;
+public class Main implements Runnable {
+	private BetterDataInputStream serverInput;
+	private BetterDataOutputStream serverOutput;
+	private Cipher inputCipher;
+	private Cipher outputCipher;
 	
-	static KeyPair keyPair;
-	static byte[] IV;
+	private KeyPair keyPair;
+	private byte[] IV;
+	private int number;
 	
 	public static void main(String[] args) {
+		
+		for (int i = 0; i < 1000; i++) {
+			new Thread(new Main(i)).start();
+		}
+		
+	}
+	
+	public Main(int number) {
+		this.number = number;
+	}
+	
+	@Override
+	public void run() {
 		try {
 			//THIS IS JUST TESTING CODE AND NOT INTENDED FOR LOOKING AT IT. PLEASE GO AWAY OR READ VERY CAREFULLY.
 			@SuppressWarnings("resource")
@@ -52,15 +66,19 @@ public class Main {
 			serverOutput.initCipher(outputCipher);
 			
 			serverOutput.sendBytesEncrypted("bertHerbertHerbertHerbertertff".getBytes());
-			serverOutput.sendRequest(RequestedAction.SEND_TEXT);
-			serverOutput.sendBytesEncrypted("Herbert sagt Hallo.".getBytes());
+			serverOutput.sendRequest(Request.SEND_TEXT);
+			serverOutput.sendBytesEncrypted((number + " sagt Hallo.").getBytes());
 			
+			while (true) {
+				serverOutput.sendRequest(Request.ALIVE);
+				Thread.sleep(1000);
+			}
+
 //			
 		} catch (Exception e) {
 			System.out.println("CLIENT");
 			e.printStackTrace();
 		}
-		
 		
 	}
 
