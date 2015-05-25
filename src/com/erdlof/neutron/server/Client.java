@@ -136,6 +136,8 @@ public class Client implements Runnable {
 			clientInput.initCipher(inputCipher); //init the streams with the ciphers
 			clientOutput.initCipher(outputCipher);
 			
+			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(clientID)); //send the ID to the client
+			
 			clientName = new String(clientInput.getBytesDecrypted(), "UTF-8");
 			
 			if (CheckUtils.isProperNickname(clientName)) {
