@@ -8,8 +8,8 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
-import com.erdlof.neutron.server.BetterDataInputStream;
-import com.erdlof.neutron.server.BetterDataOutputStream;
+import com.erdlof.neutron.streams.BetterDataInputStream;
+import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.Request;
 
 public class Main implements Runnable {
@@ -17,7 +17,9 @@ public class Main implements Runnable {
 	private BetterDataOutputStream serverOutput;
 	private Cipher inputCipher;
 	private Cipher outputCipher;
+	private Cipher unwrapCipher;
 	
+	private SecretKey secretKey;
 	private KeyPair keyPair;
 	private byte[] IV;
 	private int number;
@@ -53,10 +55,10 @@ public class Main implements Runnable {
 			
 			IV = serverInput.getBytes();
 
-			Cipher unwrapCipher = Cipher.getInstance("RSA");
+			unwrapCipher = Cipher.getInstance("RSA");
 			unwrapCipher.init(Cipher.UNWRAP_MODE, keyPair.getPrivate());
-			SecretKey secretKey = (SecretKey) unwrapCipher.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
-
+			secretKey = (SecretKey) unwrapCipher.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
+			
 			inputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			outputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));

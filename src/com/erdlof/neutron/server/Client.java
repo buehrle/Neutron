@@ -9,6 +9,8 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import com.erdlof.neutron.streams.BetterDataInputStream;
+import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.CheckUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;

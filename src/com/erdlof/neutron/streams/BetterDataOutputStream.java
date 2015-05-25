@@ -1,4 +1,4 @@
-package com.erdlof.neutron.server;
+package com.erdlof.neutron.streams;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
