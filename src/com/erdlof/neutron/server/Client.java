@@ -9,6 +9,7 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import com.erdlof.neutron.util.CheckUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
@@ -134,9 +135,13 @@ public class Client implements Runnable {
 			clientOutput.initCipher(outputCipher);
 			
 			clientName = new String(clientInput.getBytesDecrypted(), "UTF-8");
-			Main.registerClient(this);
 			
-			System.out.println("Just logged in: " + clientName);
+			if (CheckUtils.isProperNickname(clientName)) {
+				Main.registerClient(this);
+				System.out.println("Just logged in: " + clientName);
+			} else {
+				clientOutput.sendRequest(Request.ILLEGAL_NAME);
+			}
 		} catch (Exception e) {
 			System.out.println("Unexpected error while initializing connection.");
 			performShutdown(); //ask the current loop to exit and all close all resources

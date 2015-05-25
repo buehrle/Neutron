@@ -11,4 +11,5 @@ public final class Request {
 	public static final int ALIVE = 7; //alive signal from the client to the server
 	public static final int CLIENT_DISCONNECT_NOTIFICATION = 8; //inform the clients about one client disconnected
 	public static final int CLIENT_CONNECT_NOTIFICATION = 9;
+	public static final int ILLEGAL_NAME = 10;
 }
