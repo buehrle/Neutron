@@ -10,4 +10,5 @@ public final class Request {
 	public static final int REGULAR_DISCONNECT = 6; //tell the other side that you will disconnect
 	public static final int ALIVE = 7; //alive signal from the client to the server
 	public static final int CLIENT_DISCONNECT_NOTIFICATION = 8; //inform the clients about one client disconnected
+	public static final int CLIENT_CONNECT_NOTIFICATION = 9;
 }

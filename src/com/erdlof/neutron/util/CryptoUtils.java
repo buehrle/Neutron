@@ -37,6 +37,7 @@ public class CryptoUtils {
 		return tempIV;
 	}
 	
+	@Deprecated
 	public static byte[] fillUpWithZerosAndData(byte[] actualData, int lengthOfResult) {
 		if (lengthOfResult < actualData.length) return null;
 		
@@ -53,6 +54,7 @@ public class CryptoUtils {
 		return tempResult;
 	}
 	
+	@Deprecated
 	public static byte[] cutZeros(byte[] filledData, int expectedLength) {
 		if (expectedLength > filledData.length) return null;
 		

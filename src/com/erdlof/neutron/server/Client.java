@@ -13,9 +13,11 @@ import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
 public class Client implements Runnable {
+	private static final int MAX_COUNTS_UNTIL_TIMEOUT = 1000;
+	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
+	
 	private Socket clientSocket;
 	private int timeoutCounter;
-	private static final int MAX_COUNTS_UNTIL_TIMEOUT = 1000;
 	private BetterDataInputStream clientInput;
 	private BetterDataOutputStream clientOutput;
 	
@@ -41,7 +43,7 @@ public class Client implements Runnable {
 			keyGen.init(256);
 			secretKey = keyGen.generateKey(); //generate the AES-key we will use to communicate
 			
-			IV = CryptoUtils.createTotallyRandomIV(); //if you know what an IV is, good, otherwise please google q:
+			IV = CryptoUtils.createTotallyRandomIV(); //generate the initialization vector
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -59,7 +61,11 @@ public class Client implements Runnable {
 						
 						switch (request) { //what does the client want???
 							case Request.SEND_TEXT:
-								Main.sendToAllClients(request, clientInput.getBytesDecrypted(), clientID);		
+								Main.sendToAllClients(request, clientID, clientInput.getBytesDecrypted());
+								System.out.println("NACHRICHT");
+								break;
+							case Request.SEND_FILE:
+								//TODO add filesharing
 								break;
 							case Request.REGULAR_DISCONNECT:
 								System.out.println("Regular disconnect.");
@@ -87,7 +93,7 @@ public class Client implements Runnable {
 			}
 		} catch (Exception e) {
 			try {
-				clientOutput.sendRequest(Request.UNEXPECTED_ERROR);
+				clientOutput.sendRequest(Request.UNEXPECTED_ERROR); //only send this if the connection was established before the exception occured
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
@@ -119,15 +125,17 @@ public class Client implements Runnable {
 			
 			clientOutput.sendBytes(IV); //it does what it seems to do.
 	
-			inputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING"); //the cipher for decrypting data from the client
-			outputCipher = Cipher.getInstance("AES/CBC/PKCS5PADDING"); //encrypting
+			inputCipher = Cipher.getInstance(ALGORITHM_PADDING); //the cipher for decrypting data from the client
+			outputCipher = Cipher.getInstance(ALGORITHM_PADDING); //encrypting
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			
-			clientInput.initCipher(inputCipher); //give our sweet BetterDataInputStream what it wants to be able to decrypt. ^.^
+			clientInput.initCipher(inputCipher); //init the streams with the ciphers
 			clientOutput.initCipher(outputCipher);
 			
 			clientName = new String(clientInput.getBytesDecrypted(), "UTF-8");
+			Main.registerClient(this);
+			
 			System.out.println("Just logged in: " + clientName);
 		} catch (Exception e) {
 			System.out.println("Unexpected error while initializing connection.");
@@ -147,7 +155,7 @@ public class Client implements Runnable {
 		return clientID;
 	}
 	
-	public void sendToClientFromID(int request, byte[] data, long senderID) { //the ID represents the SENDER of the data
+	public void sendToClientFromID(int request, long senderID, byte[] data) { //the ID represents the SENDER of the data
 		try {
 			clientOutput.sendRequest(request);
 			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(senderID));
