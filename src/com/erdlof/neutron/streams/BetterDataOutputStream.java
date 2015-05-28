@@ -38,7 +38,7 @@ public class BetterDataOutputStream extends DataOutputStream {
 		super.flush();
 	}
 	
-	public void sendRequest(int request) throws IllegalBlockSizeException, BadPaddingException, IOException {
+	public synchronized void sendRequest(int request) throws IllegalBlockSizeException, BadPaddingException, IOException {
 		if (outputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
 		
 		super.write(outputCipher.doFinal(CryptoUtils.intToByteArray(request)));

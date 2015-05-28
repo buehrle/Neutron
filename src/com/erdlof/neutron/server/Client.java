@@ -70,6 +70,9 @@ public class Client implements Runnable {
 							case Request.SEND_FILE:
 								//TODO add filesharing
 								break;
+							case Request.GET_FILE:
+								//TODO filesharing #2
+								break;
 							case Request.REGULAR_DISCONNECT:
 								System.out.println("Regular disconnect.");
 								performShutdown(); //ask the current loop to exit and all close all resources

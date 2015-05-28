@@ -40,7 +40,7 @@ public class Main {
 		clientIDCreator = new Random();
 		activeClients = new ArrayList<Client>();
 	}
-	
+	//the following methods could also be implemented in Client.java, but I like it that way, it's more clear
 	public static synchronized void sendToAllClients(int request, long senderID, byte[] data) { //sends the data to all clients
 		for (Client client : activeClients) {
 			client.sendToClientFromID(request, senderID, data);

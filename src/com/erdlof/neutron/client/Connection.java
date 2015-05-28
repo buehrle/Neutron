@@ -32,9 +32,15 @@ public class Connection implements Runnable {
 	private String name;
 	private long clientID;
 	
-	public Connection(KeyPair keyPair, String name) {
+	private int aliveCounter;
+	
+	private ClientListener listener;
+	
+	public Connection(KeyPair keyPair, String name, ClientListener listener) {
+		this.listener = listener;
 		this.keyPair = keyPair;
 		this.name = name;
+		aliveCounter = 0;
 	}
 	
 	@Override
@@ -48,20 +54,32 @@ public class Connection implements Runnable {
 					
 					switch (request) {
 						case Request.SEND_TEXT:
-						case Request.SEND_FILE:
+							listener.setRequest(request, CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
+							break;
 						case Request.CLIENT_DISCONNECT_NOTIFICATION:
+							listener.setRequest(request, CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), null);
+							break;
 						case Request.CLIENT_CONNECT_NOTIFICATION:
+							listener.setRequest(request, CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
+							break;
 						default:
-							Main.setDisconnectRequest(request);
+							listener.setDisconnectRequest(request);
 							performShutdown();
 							break;
 					}
 				}
-				//TODO implement the alive-sender ELEGANTLY
-				if (!Thread.currentThread().isInterrupted()) Thread.sleep(10);
+				
+				if (!Thread.currentThread().isInterrupted()) {
+					Thread.sleep(10);
+					
+					if (aliveCounter++ > 100) {
+						serverOutput.sendRequest(Request.ALIVE);
+						aliveCounter = 0;
+					}
+				}
 			}
 		} catch (Exception e) {
-			Main.setDisconnectRequest(Request.UNEXPECTED_ERROR);
+			listener.setDisconnectRequest(Request.UNEXPECTED_ERROR);
 		} finally {
 			try {
 				serverInput.close();
@@ -70,7 +88,7 @@ public class Connection implements Runnable {
 			} catch (IOException e) {
 			}
 		}
-		Main.disconnected();
+		listener.disconnected();
 	}
 	
 	public void init() { //pretty much the same as in server.Client.java
@@ -100,9 +118,9 @@ public class Connection implements Runnable {
 			clientID = CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted());
 			
 			serverOutput.sendBytesEncrypted(name.getBytes());
-			Main.connectionEstablished();
+			listener.connectionEstablished();
 		} catch (Exception e) {
-			Main.connectionFailed();
+			listener.connectionFailed();
 			performShutdown();
 		}
 	}
