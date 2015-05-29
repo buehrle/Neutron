@@ -35,11 +35,14 @@ public class Connection implements Runnable {
 	private int aliveCounter;
 	
 	private ClientListener listener;
+	private String serverAdress;
 	
-	public Connection(KeyPair keyPair, String name, ClientListener listener) {
+	public Connection(KeyPair keyPair, String name, String serverAdress, ClientListener listener) {
 		this.listener = listener;
 		this.keyPair = keyPair;
 		this.name = name;
+		this.serverAdress = serverAdress;
+		
 		aliveCounter = 0;
 	}
 	
@@ -119,6 +122,8 @@ public class Connection implements Runnable {
 			
 			serverOutput.sendBytesEncrypted(name.getBytes());
 			listener.connectionEstablished();
+			
+			//TODO GET ALL LOGGED IN CLIENTS
 		} catch (Exception e) {
 			listener.connectionFailed();
 			performShutdown();

@@ -13,4 +13,5 @@ public final class Request {
 	public static final int ILLEGAL_NAME = 10;
 	public static final int SERVER_SHUTDOWN = 11;
 	public static final int GET_FILE = 12; //request to download a previously uploaded file
+	public static final int NEW_FILE = 13;
 }
