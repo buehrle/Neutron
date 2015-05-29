@@ -148,6 +148,7 @@ public class Client implements Runnable {
 				System.out.println("Just logged in: " + clientName);
 			} else {
 				clientOutput.sendRequest(Request.ILLEGAL_NAME);
+				performShutdown();
 			}
 		} catch (Exception e) {
 			System.out.println("Unexpected error while initializing connection.");

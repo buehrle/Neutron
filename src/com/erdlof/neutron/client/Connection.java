@@ -96,7 +96,7 @@ public class Connection implements Runnable {
 	
 	public void init() { //pretty much the same as in server.Client.java
 		try {
-			client = new Socket("localhost", 12345);
+			client = new Socket(serverAdress, 12345);
 			serverInput = new BetterDataInputStream(client.getInputStream());
 			serverOutput = new BetterDataOutputStream(client.getOutputStream());
 			
@@ -130,7 +130,7 @@ public class Connection implements Runnable {
 		}
 	}
 	
-	private void performShutdown() {
+	public synchronized void performShutdown() {
 		Thread.currentThread().interrupt();
 	}
 
@@ -138,6 +138,12 @@ public class Connection implements Runnable {
 		return clientID;
 	}
 	
-	
+	public void sendData(int request, byte[] data) {
+		try {
+			serverOutput.sendRequest(request);
+			serverOutput.sendBytesEncrypted(data);
+		} catch (Exception e) {
+		}
+	}
 
 }

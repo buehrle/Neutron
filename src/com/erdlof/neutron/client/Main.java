@@ -3,7 +3,9 @@ package com.erdlof.neutron.client;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
 import java.io.UnsupportedEncodingException;
+import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +23,10 @@ import java.awt.Dimension;
 import java.awt.CardLayout;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.JLabel;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
-public class Main extends JFrame implements ClientListener, ActionListener {
+public class Main extends JFrame implements ClientListener, ActionListener, KeyListener {
 	private static final long serialVersionUID = 527099896996818525L;
 	
 	private Connection connection;
@@ -36,13 +40,20 @@ public class Main extends JFrame implements ClientListener, ActionListener {
 	private JButton btnConnect;
 	private JLabel lblStatus;
 	private JTextPane messageProvideBox;
-	
+	private KeyPairGenerator generator;
+	private JLabel lblErrorDisplay;
+	//ONLY FOR TESTING, I WILL MAKE IT MORE BEAUTIFUL
 	public static void main(String[] args) {
 		new Main();
 	}
 	
 	public Main() { //set up the window
 		partners = new ArrayList<Partner>();
+		try {
+			generator = KeyPairGenerator.getInstance("RSA");
+		} catch (Exception e) {
+		}
+		generator.initialize(2048);
 		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -67,7 +78,7 @@ public class Main extends JFrame implements ClientListener, ActionListener {
 		setVisible(true);
     }
 	
-	private void initializeComponents() { //this is made by WindowBuilder as I'm to bad to design GUIs.
+	private void initializeComponents() { //this is made by WindowBuilder as I'm too bad to design GUIs.
 		//TODO add elements
 		JMenuBar mainMenuBar = new JMenuBar();
 		setJMenuBar(mainMenuBar);
@@ -78,6 +89,7 @@ public class Main extends JFrame implements ClientListener, ActionListener {
 		panel.setLayout(new CardLayout(5, 5));
 		
 		messageInput = new JTextField();
+		messageInput.addKeyListener(this);
 		panel.add(messageInput, "name_6666103840325");
 		messageInput.setColumns(10);
 		
@@ -101,26 +113,33 @@ public class Main extends JFrame implements ClientListener, ActionListener {
 		btnConnect.addActionListener(this);
 		loginContainer.add(btnConnect, "flowx,cell 0 2");
 		
-		lblStatus = new JLabel("test");
+		lblStatus = new JLabel("");
 		loginContainer.add(lblStatus, "cell 0 2");
+		
+		lblErrorDisplay = new JLabel("");
+		loginContainer.add(lblErrorDisplay, "cell 0 3");
 		
 	}
 	
 	public synchronized void connectionEstablished() {
-		
+		lblStatus.setText("Connected.");
 	}
 	
 	public synchronized void connectionFailed() {
-		
+		lblErrorDisplay.setText("Connection failed.");
+		btnConnect.setEnabled(true);
 	}
 	
 	public synchronized void disconnected() {
-		
+		lblStatus.setText("Disconnected");
+		btnConnect.setEnabled(true);
+		connection = null;
 	}
 	
 	public synchronized void setRequest(int request, long senderID, byte[] data) {
 		switch (request) { //TODO implement the notifications
 			case Request.SEND_TEXT:
+				messageProvideBox.setText(messageProvideBox.getText() + new String(data) + "/n");
 				break;
 			case Request.CLIENT_CONNECT_NOTIFICATION:
 				try {
@@ -141,25 +160,59 @@ public class Main extends JFrame implements ClientListener, ActionListener {
 	}
 	
 	public synchronized void setDisconnectRequest(int request) {
+		String reason = "";
+		
 		switch (request) {
 			case Request.UNEXPECTED_ERROR:
+				reason = "Unexpected error.";
 				break;
 			case Request.SERVER_SHUTDOWN:
+				reason = "Server shutdown.";
 				break;
 			case Request.KICKED_FROM_SERVER:
+				reason = "You were kicked.";
 				break;
 			case Request.ILLEGAL_REQUEST:
+				reason = "Illegal request (that is very bad)!";
 				break;
 			case Request.ILLEGAL_NAME:
+				reason = "That nickname is not allowed.";
 				break;
 			default:
 				break;
 		}
+		lblErrorDisplay.setText(reason);
+	}
+	
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == btnConnect) {
+			connection = new Connection(generator.generateKeyPair(), clientName.getText(), serverAdress.getText(), this);
+			new Thread(connection).start();
+			lblErrorDisplay.setText("");
+			btnConnect.setEnabled(false);
+			lblStatus.setText("Connecting...");
+		} else if (e.getSource() == messageInput) {
+			if (connection != null) connection.sendData(Request.SEND_TEXT, messageInput.getText().getBytes());
+		}
+		
 	}
 
 	@Override
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == btnConnect) System.out.println("PEESDF");
+	public void keyPressed(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		if (connection != null) connection.sendData(Request.SEND_TEXT, messageInput.getText().getBytes());
 		
 	}
 }
