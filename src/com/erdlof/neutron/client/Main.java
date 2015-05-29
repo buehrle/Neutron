@@ -4,7 +4,8 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyListener;
-import java.io.UnsupportedEncodingException;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +20,20 @@ import java.awt.BorderLayout;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JPanel;
+
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.CardLayout;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.JLabel;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import javax.swing.JScrollPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 
-public class Main extends JFrame implements ClientListener, ActionListener, KeyListener {
+public class Main extends JFrame implements ClientListener, ActionListener, KeyListener, WindowListener {
 	private static final long serialVersionUID = 527099896996818525L;
 	
 	private Connection connection;
@@ -42,6 +49,11 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private JTextPane messageProvideBox;
 	private KeyPairGenerator generator;
 	private JLabel lblErrorDisplay;
+	private JPanel messageContainerPanel;
+	private JScrollPane scrollPane;
+	private StyledDocument mainMessages;
+	private SimpleAttributeSet style;
+	
 	//ONLY FOR TESTING, I WILL MAKE IT MORE BEAUTIFUL
 	public static void main(String[] args) {
 		new Main();
@@ -49,6 +61,9 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	
 	public Main() { //set up the window
 		partners = new ArrayList<Partner>();
+		
+		style = new SimpleAttributeSet();
+		
 		try {
 			generator = KeyPairGenerator.getInstance("RSA");
 		} catch (Exception e) {
@@ -70,10 +85,11 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		
 		setLocation(x, y);
 		
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.setMinimumSize(new Dimension(700, 400));
 	
 		this.initializeComponents();
+		addWindowListener(this);
 		
 		setVisible(true);
     }
@@ -92,10 +108,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		messageInput.addKeyListener(this);
 		panel.add(messageInput, "name_6666103840325");
 		messageInput.setColumns(10);
-		
-		messageProvideBox = new JTextPane();
-		messageProvideBox.setEditable(false);
-		getContentPane().add(messageProvideBox, BorderLayout.CENTER);
 		
 		JPanel loginContainer = new JPanel();
 		getContentPane().add(loginContainer, BorderLayout.EAST);
@@ -119,10 +131,21 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		lblErrorDisplay = new JLabel("");
 		loginContainer.add(lblErrorDisplay, "cell 0 3");
 		
+		messageContainerPanel = new JPanel();
+		getContentPane().add(messageContainerPanel, BorderLayout.CENTER);
+		messageContainerPanel.setLayout(new CardLayout(5, 5));
+		
+		messageProvideBox = new JTextPane();
+		
+		scrollPane = new JScrollPane(messageProvideBox);
+		messageContainerPanel.add(scrollPane, "name_21017317536325");
+		
+		mainMessages = messageProvideBox.getStyledDocument();
 	}
 	
 	public synchronized void connectionEstablished() {
 		lblStatus.setText("Connected.");
+		messageProvideBox.setText("");
 	}
 	
 	public synchronized void connectionFailed() {
@@ -134,22 +157,30 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		lblStatus.setText("Disconnected");
 		btnConnect.setEnabled(true);
 		connection = null;
+		//TODO ADD DISCONNECT/CONNECT SWITCH IN BUTTON
 	}
 	
 	public synchronized void setRequest(int request, long senderID, byte[] data) {
 		switch (request) { //TODO implement the notifications
 			case Request.SEND_TEXT:
-				messageProvideBox.setText(messageProvideBox.getText() + new String(data) + "\n");
+				appendText("["  + getPartnerByID(partners, senderID).getName() + "] " + new String(data), Color.BLACK);
 				break;
 			case Request.CLIENT_CONNECT_NOTIFICATION:
-				try {
-					partners.add(new Partner(senderID, new String(data, "UTF-8")));
-				} catch (UnsupportedEncodingException e) {}
+				appendText(new String(data) + " just logged in.", Color.RED);
+				partners.add(new Partner(senderID, new String(data)));
 				break;
 			case Request.CLIENT_DISCONNECT_NOTIFICATION:
 				partners.remove(getPartnerByID(partners, senderID));
+				appendText(getPartnerByID(partners, senderID).getName() + " just logged out.", Color.RED);
 				break;
 		}
+	}
+	
+	private void appendText(String text, Color textColor) {
+		StyleConstants.setForeground(style, textColor);
+		try {
+			mainMessages.insertString(mainMessages.getLength(), text + "\n", style);
+		} catch (BadLocationException e) {}
 	}
 	
 	private Partner getPartnerByID(List<Partner> list, long ID) {
@@ -190,6 +221,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 			connection = new Connection(generator.generateKeyPair(), clientName.getText(), serverAdress.getText(), this);
 			new Thread(connection).start();
 			lblErrorDisplay.setText("");
+			
 			btnConnect.setEnabled(false);
 			lblStatus.setText("Connecting...");
 		} else if (e.getSource() == messageInput) {
@@ -200,19 +232,39 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		// TODO Auto-generated method stub
-		
+		if (connection != null && e.getKeyCode() == 10 && messageInput.getText().length() > 0){
+			connection.sendData(Request.SEND_TEXT, messageInput.getText().getBytes());
+			messageInput.setText("");
+		}
 	}
 
 	@Override
-	public void keyReleased(KeyEvent e) {
-		// TODO Auto-generated method stub
-		
+	public void keyReleased(KeyEvent e) {}
+
+	@Override
+	public void keyTyped(KeyEvent e) {}
+
+	@Override
+	public void windowActivated(WindowEvent arg0) {}
+
+	@Override
+	public void windowClosed(WindowEvent arg0) {}
+
+	@Override
+	public void windowClosing(WindowEvent arg0) {
+		if (connection != null) connection.disconnect();
+		dispose();
 	}
 
 	@Override
-	public void keyTyped(KeyEvent e) {
-		if (connection != null) connection.sendData(Request.SEND_TEXT, messageInput.getText().getBytes());
-		
-	}
+	public void windowDeactivated(WindowEvent arg0) {}
+
+	@Override
+	public void windowDeiconified(WindowEvent arg0) {}
+
+	@Override
+	public void windowIconified(WindowEvent arg0) {}
+
+	@Override
+	public void windowOpened(WindowEvent arg0) {}
 }

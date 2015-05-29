@@ -48,7 +48,7 @@ public class Client implements Runnable {
 			
 			IV = CryptoUtils.createTotallyRandomIV(); //generate the initialization vector
 		} catch (Exception e) {
-			e.printStackTrace();
+			
 		}
 	}
 	
@@ -64,7 +64,8 @@ public class Client implements Runnable {
 						
 						switch (request) { //what does the client want???
 							case Request.SEND_TEXT:
-								Main.sendToAllClients(request, clientID, clientInput.getBytesDecrypted());
+								byte[] tempData = clientInput.getBytesDecrypted();
+								if (tempData.length > 0) Main.sendToAllClients(request, clientID, tempData);
 								break;
 							case Request.SEND_FILE:
 								//TODO add filesharing
@@ -102,18 +103,17 @@ public class Client implements Runnable {
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
-			e.printStackTrace();
+			
 		} finally {
 			try {
 				clientInput.close();
 				clientOutput.close();
 				clientSocket.close();			
 			} catch (IOException e) {
-				e.printStackTrace();
+			} finally {
+				Main.unregisterClient(this); //the fact that this is executed on the end of the thread MAY cause an exception, but that's okay
 			}
 		}
-		
-		Main.unregisterClient(this); //the fact that this is executed on the end of the thread MAY cause an exception, but that's okay
 	}
 	
 	private void initConnection() {
@@ -173,7 +173,6 @@ public class Client implements Runnable {
 			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(senderID));
 			clientOutput.sendBytesEncrypted(data);
 		} catch (Exception e) {
-			e.printStackTrace();
 			performShutdown(); //ask the current loop to exit and all close all resources
 		}
 	}
@@ -183,7 +182,6 @@ public class Client implements Runnable {
 			clientOutput.sendRequest(request);
 			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(senderID));
 		} catch (Exception e) {
-			e.printStackTrace();
 			performShutdown(); //ask the current loop to exit and all close all resources
 		}
 	}

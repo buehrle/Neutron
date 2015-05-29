@@ -30,7 +30,6 @@ public class Main {
 				executor.execute(client);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 	

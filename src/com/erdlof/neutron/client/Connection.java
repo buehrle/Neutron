@@ -83,15 +83,17 @@ public class Connection implements Runnable {
 			}
 		} catch (Exception e) {
 			listener.setDisconnectRequest(Request.UNEXPECTED_ERROR);
+			e.printStackTrace();
 		} finally {
 			try {
 				serverInput.close();
 				serverOutput.close();
 				client.close();
 			} catch (IOException e) {
+			} finally {
+				listener.disconnected();
 			}
 		}
-		listener.disconnected();
 	}
 	
 	public void init() { //pretty much the same as in server.Client.java
@@ -130,7 +132,7 @@ public class Connection implements Runnable {
 		}
 	}
 	
-	public synchronized void performShutdown() {
+	private synchronized void performShutdown() {
 		Thread.currentThread().interrupt();
 	}
 
@@ -145,5 +147,11 @@ public class Connection implements Runnable {
 		} catch (Exception e) {
 		}
 	}
-
+	
+	public void disconnect() {
+		try {
+			serverOutput.sendRequest(Request.REGULAR_DISCONNECT);
+		} catch (Exception e) {}
+		performShutdown();
+	}
 }
