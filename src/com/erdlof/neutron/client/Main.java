@@ -139,7 +139,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	public synchronized void setRequest(int request, long senderID, byte[] data) {
 		switch (request) { //TODO implement the notifications
 			case Request.SEND_TEXT:
-				messageProvideBox.setText(messageProvideBox.getText() + new String(data) + "/n");
+				messageProvideBox.setText(messageProvideBox.getText() + new String(data) + "\n");
 				break;
 			case Request.CLIENT_CONNECT_NOTIFICATION:
 				try {

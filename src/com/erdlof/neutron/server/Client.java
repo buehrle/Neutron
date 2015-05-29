@@ -65,7 +65,6 @@ public class Client implements Runnable {
 						switch (request) { //what does the client want???
 							case Request.SEND_TEXT:
 								Main.sendToAllClients(request, clientID, clientInput.getBytesDecrypted());
-								System.out.println("NACHRICHT");
 								break;
 							case Request.SEND_FILE:
 								//TODO add filesharing
