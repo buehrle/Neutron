@@ -12,6 +12,7 @@ import javax.crypto.spec.IvParameterSpec;
 import com.erdlof.neutron.streams.BetterDataInputStream;
 import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.CheckUtils;
+import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
@@ -101,9 +102,8 @@ public class Client implements Runnable {
 			try {
 				clientOutput.sendRequest(Request.UNEXPECTED_ERROR); //only send this if the connection was established before the exception occured
 			} catch (Exception e1) {
-				e1.printStackTrace();
 			}
-			
+			e.printStackTrace();
 		} finally {
 			try {
 				clientInput.close();
@@ -140,7 +140,8 @@ public class Client implements Runnable {
 			
 			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(clientID)); //send the ID to the client
 			
-			clientName = new String(clientInput.getBytesDecrypted(), "UTF-8");
+			clientName = new String(clientInput.getBytesDecrypted());
+			clientOutput.sendBytesEncrypted(CommunicationUtils.wrapClientData(Main.getActiveClients()));
 			
 			if (CheckUtils.isProperNickname(clientName)) {
 				Main.registerClient(this);

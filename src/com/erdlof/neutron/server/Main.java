@@ -40,6 +40,7 @@ public class Main {
 		activeClients = new ArrayList<Client>();
 	}
 	//the following methods could also be implemented in Client.java, but I like it that way, it's more clear
+	//there is only one intrinsic lock available, we want that
 	public static synchronized void sendToAllClients(int request, long senderID, byte[] data) { //sends the data to all clients
 		for (Client client : activeClients) {
 			client.sendToClientFromID(request, senderID, data);
@@ -52,13 +53,19 @@ public class Main {
 		}
 	}
 	
+	public static synchronized List<Client> getActiveClients() {
+		return activeClients;
+	}
+	
 	public static synchronized void registerClient(Client client) {
 		activeClients.add(client);
 		sendToAllClients(Request.CLIENT_CONNECT_NOTIFICATION, client.getClientID(), client.getClientName().getBytes());
 	}
 	
 	public static synchronized void unregisterClient(Client client) {
-		activeClients.remove(client);
-		sendToAllClients(Request.CLIENT_DISCONNECT_NOTIFICATION, client.getClientID());
+		if (activeClients.contains(client)) {
+			activeClients.remove(client);
+			sendToAllClients(Request.CLIENT_DISCONNECT_NOTIFICATION, client.getClientID());
+		}
 	}
 }

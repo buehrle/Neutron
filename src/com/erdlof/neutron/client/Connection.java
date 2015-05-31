@@ -10,10 +10,11 @@ import javax.crypto.spec.IvParameterSpec;
 
 import com.erdlof.neutron.streams.BetterDataInputStream;
 import com.erdlof.neutron.streams.BetterDataOutputStream;
+import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
-public class Connection implements Runnable {
+public class Connection extends Thread {
 	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
 	
 	private BetterDataInputStream serverInput;
@@ -81,9 +82,10 @@ public class Connection implements Runnable {
 					}
 				}
 			}
+		} catch (InterruptedException e) {
 		} catch (Exception e) {
-			listener.setDisconnectRequest(Request.UNEXPECTED_ERROR);
 			e.printStackTrace();
+			listener.setDisconnectRequest(Request.UNEXPECTED_ERROR);
 		} finally {
 			try {
 				serverInput.close();
@@ -123,17 +125,16 @@ public class Connection implements Runnable {
 			clientID = CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted());
 			
 			serverOutput.sendBytesEncrypted(name.getBytes());
-			listener.connectionEstablished();
-			
-			//TODO GET ALL LOGGED IN CLIENTS
+			listener.connectionEstablished(CommunicationUtils.unwrapClientData(serverInput.getBytesDecrypted()));
 		} catch (Exception e) {
+			e.printStackTrace();
 			listener.connectionFailed();
 			performShutdown();
 		}
 	}
 	
-	private synchronized void performShutdown() {
-		Thread.currentThread().interrupt();
+	private void performShutdown() {
+		this.interrupt();
 	}
 
 	public long getClientID() {
