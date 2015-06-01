@@ -1,6 +1,5 @@
 package com.erdlof.neutron.util;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.erdlof.neutron.client.Partner;

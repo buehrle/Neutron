@@ -33,7 +33,7 @@ public class Connection extends Thread {
 	private String name;
 	private long clientID;
 	
-	private int aliveCounter;
+	private volatile int aliveCounter;
 	
 	private ClientListener listener;
 	private String serverAdress;
@@ -58,13 +58,13 @@ public class Connection extends Thread {
 					
 					switch (request) {
 						case Request.SEND_TEXT:
-							listener.setRequest(request, CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
+							listener.textMessage(CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
 							break;
 						case Request.CLIENT_DISCONNECT_NOTIFICATION:
-							listener.setRequest(request, CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), null);
+							listener.clientDisconnected(CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()));
 							break;
 						case Request.CLIENT_CONNECT_NOTIFICATION:
-							listener.setRequest(request, CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
+							listener.clientConnected(CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
 							break;
 						default:
 							listener.setDisconnectRequest(request);
@@ -76,9 +76,9 @@ public class Connection extends Thread {
 				if (!Thread.currentThread().isInterrupted()) {
 					Thread.sleep(10);
 					
-					if (aliveCounter++ > 100) {
+					if (incrementAliveCounter() > 100) {
 						serverOutput.sendRequest(Request.ALIVE);
-						aliveCounter = 0;
+						resetAliveCounter();
 					}
 				}
 			}
@@ -133,6 +133,14 @@ public class Connection extends Thread {
 		}
 	}
 	
+	private synchronized int incrementAliveCounter() {
+		return aliveCounter++;
+	}
+	
+	private synchronized void resetAliveCounter() {
+		aliveCounter = 0;
+	}
+	
 	private void performShutdown() {
 		this.interrupt();
 	}
@@ -142,6 +150,7 @@ public class Connection extends Thread {
 	}
 	
 	public void sendData(int request, byte[] data) {
+		resetAliveCounter();
 		try {
 			serverOutput.sendRequest(request);
 			serverOutput.sendBytesEncrypted(data);

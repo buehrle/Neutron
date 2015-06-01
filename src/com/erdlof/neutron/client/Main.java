@@ -65,7 +65,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private JList<String> clientList;
 	private DefaultListModel<String> lm;
 	
-	//ONLY FOR TESTING, I WILL MAKE IT MORE BEAUTIFUL
 	public static void main(String[] args) {
 		new Main();
 	}
@@ -164,7 +163,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		
 		mainMessages = messageProvideBox.getStyledDocument();
 	}
-	//----
+	
 	private JLabel getlblStatus() {
 		synchronized (lblStatus) {
 			return lblStatus;
@@ -183,9 +182,9 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 	}
 	
-	private JList<String> getClientList() {
+	private DefaultListModel<String> getClientListModel() {
 		synchronized (clientList) {
-			return clientList;
+			return lm;
 		}
 	}
 	
@@ -242,27 +241,24 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	public void disconnected() { //called EVERY TIME on thread exit
 		getlblStatus().setText("Disconnected");
 		getbtnConnect().setText("Connect");
-		getClientList().removeAll();
+		getClientListModel().removeAllElements();
 		connection = null;
 	}
 	
-	@Override
-	public void setRequest(int request, long senderID, byte[] data) {
-		switch (request) { //TODO implement the notifications
-			case Request.SEND_TEXT:
-				appendText("["  + getPartnerByID(senderID).getName() + "] " + new String(data), Color.BLACK);
-				break;
-			case Request.CLIENT_CONNECT_NOTIFICATION:
-				appendText(new String(data) + " just logged in.", Color.RED);
-				getPartners().add(new Partner(senderID, new String(data)));
-				renderClients();
-				break;
-			case Request.CLIENT_DISCONNECT_NOTIFICATION:
-				appendText(getPartnerByID(senderID).getName() + " just logged out.", Color.RED);
-				getPartners().remove(getPartnerByID(senderID));
-				renderClients();
-				break;
-		}
+	public void textMessage(long senderID, byte[] message) {
+		appendText("["  + getPartnerByID(senderID).getName() + "] " + new String(message), Color.BLACK);
+	}
+	
+	public void clientConnected(long senderID, byte[] name) {
+		appendText(new String(name) + " just logged in.", Color.RED);
+		getPartners().add(new Partner(senderID, new String(name)));
+		renderClients();
+	}
+	
+	public void clientDisconnected(long senderID) {
+		appendText(getPartnerByID(senderID).getName() + " just logged out.", Color.RED);
+		getPartners().remove(getPartnerByID(senderID));
+		renderClients();
 	}
 	
 	private void renderClients() {
