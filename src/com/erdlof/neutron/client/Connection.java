@@ -76,7 +76,7 @@ public class Connection extends Thread {
 				if (!Thread.currentThread().isInterrupted()) {
 					Thread.sleep(10);
 					
-					if (incrementAliveCounter() > 100) {
+					if (incrementAliveCounter() > 500) {
 						serverOutput.sendRequest(Request.ALIVE);
 						resetAliveCounter();
 					}

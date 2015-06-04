@@ -27,7 +27,7 @@ public class BetterDataOutputStream extends DataOutputStream {
 		super.flush();
 	}
 	
-	public void sendBytesEncrypted(byte[] bytes) throws IllegalBlockSizeException, BadPaddingException, IOException {
+	public synchronized void sendBytesEncrypted(byte[] bytes) throws IllegalBlockSizeException, BadPaddingException, IOException {
 		if (outputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
 		
 		byte[] tempDataCiphered = outputCipher.doFinal(bytes);
@@ -38,10 +38,14 @@ public class BetterDataOutputStream extends DataOutputStream {
 		super.flush();
 	}
 	
-	public synchronized void sendRequest(int request) throws IllegalBlockSizeException, BadPaddingException, IOException {
+	public void sendRequest(int request) throws IllegalBlockSizeException, BadPaddingException, IOException {
+		this.sendInt(request);
+	}
+	
+	public synchronized void sendInt(int data) throws IllegalBlockSizeException, BadPaddingException, IOException {
 		if (outputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
 		
-		super.write(outputCipher.doFinal(CryptoUtils.intToByteArray(request)));
+		super.write(outputCipher.doFinal(CryptoUtils.intToByteArray(data)));
 		super.flush();
 	}
 }

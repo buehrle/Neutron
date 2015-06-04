@@ -19,7 +19,7 @@ import com.erdlof.neutron.util.Request;
 public class Client implements Runnable {
 	private static final int MAX_COUNTS_UNTIL_TIMEOUT = 1000;
 	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
-	
+
 	private Socket clientSocket;
 	private int timeoutCounter;
 	private BetterDataInputStream clientInput;
@@ -76,13 +76,13 @@ public class Client implements Runnable {
 								break;
 							case Request.REGULAR_DISCONNECT:
 								System.out.println("Regular disconnect.");
-								performShutdown(); //ask the current loop to exit and all close all resources
+								performShutdown(); //ask the current loop to exit and close all resources
 								break;
-							case Request.ALIVE: //the client has to confirm that it's alive
+							case Request.ALIVE: //heartbeat
 								break;
 							default: 
 								clientOutput.sendRequest(Request.ILLEGAL_REQUEST);
-								performShutdown(); //ask the current loop to exit and all close all resources
+								performShutdown(); //ask the current loop to exit and close all resources
 								break;
 						}
 						
@@ -95,7 +95,7 @@ public class Client implements Runnable {
 					
 				} else {
 					System.out.println("Client did not respond for too long. Closing connection");
-					performShutdown(); //ask the current loop to exit and all close all resources
+					performShutdown(); //ask the current loop to exit and close all resources
 				}
 			}
 		} catch (Exception e) {
@@ -152,7 +152,7 @@ public class Client implements Runnable {
 			}
 		} catch (Exception e) {
 			System.out.println("Unexpected error while initializing connection.");
-			performShutdown(); //ask the current loop to exit and all close all resources
+			performShutdown(); //ask the current loop to exit and close all resources
 		}
 	}
 	
@@ -174,7 +174,7 @@ public class Client implements Runnable {
 			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(senderID));
 			clientOutput.sendBytesEncrypted(data);
 		} catch (Exception e) {
-			performShutdown(); //ask the current loop to exit and all close all resources
+			performShutdown(); //ask the current loop to exit and close all resources
 		}
 	}
 	
@@ -183,7 +183,7 @@ public class Client implements Runnable {
 			clientOutput.sendRequest(request);
 			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(senderID));
 		} catch (Exception e) {
-			performShutdown(); //ask the current loop to exit and all close all resources
+			performShutdown(); //ask the current loop to exit and close all resources
 		}
 	}
 }

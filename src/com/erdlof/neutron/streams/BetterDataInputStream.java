@@ -31,7 +31,7 @@ public class BetterDataInputStream extends DataInputStream {
 		return tempData;
 	}
 	
-	public byte[] getBytesDecrypted() throws  IllegalBlockSizeException, BadPaddingException, IOException { //does the same as getBytes() but it also uses the cipher to decrypt the data
+	public synchronized byte[] getBytesDecrypted() throws  IllegalBlockSizeException, BadPaddingException, IOException { //does the same as getBytes() but it also uses the cipher to decrypt the data
 		if (inputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
 		
 		byte[] lengthTempCiphered = new byte[16];
@@ -45,7 +45,11 @@ public class BetterDataInputStream extends DataInputStream {
 		return inputCipher.doFinal(tempData);
 	}
 	
-	public synchronized int getRequest() throws IOException, IllegalBlockSizeException, BadPaddingException {
+	public int getRequest() throws IOException, IllegalBlockSizeException, BadPaddingException {
+		return this.getInt();
+	}
+	
+	public synchronized int getInt() throws IllegalBlockSizeException, BadPaddingException, IOException {
 		if (inputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
 		
 		byte[] cipheredRequest = new byte[16];
