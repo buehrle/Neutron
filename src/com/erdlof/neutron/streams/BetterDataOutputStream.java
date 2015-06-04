@@ -39,10 +39,10 @@ public class BetterDataOutputStream extends DataOutputStream {
 	}
 	
 	public void sendRequest(int request) throws IllegalBlockSizeException, BadPaddingException, IOException {
-		this.sendInt(request);
+		this.sendIntEncrypted(request);
 	}
 	
-	public synchronized void sendInt(int data) throws IllegalBlockSizeException, BadPaddingException, IOException {
+	public synchronized void sendIntEncrypted(int data) throws IllegalBlockSizeException, BadPaddingException, IOException {
 		if (outputCipher == null) throw new NullPointerException("The Cipher was not initialized!");
 		
 		super.write(outputCipher.doFinal(CryptoUtils.intToByteArray(data)));

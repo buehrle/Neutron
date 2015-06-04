@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.net.Socket;
-import java.nio.file.Path;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -24,6 +23,7 @@ public class FileReceiver extends Thread {
 	private BufferedOutputStream fileOutputStream;
 	private int encryptedFileLength;
 	private boolean hasFileSizeRestriction = false;
+	private File file;
 	
 	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, int encryptedFileLength, int maxFileLength) throws FileNotFoundException {
 		this(socket, IV, key, listener, destination, encryptedFileLength);
@@ -32,7 +32,9 @@ public class FileReceiver extends Thread {
 	}
 	
 	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, int encryptedFileLength) throws FileNotFoundException {
-		fileOutputStream = new BufferedOutputStream(new FileOutputStream(new File(destination)));
+		file = new File(destination);
+		file.getParentFile().mkdirs();
+		fileOutputStream = new BufferedOutputStream(new FileOutputStream(file));
 		this.socket = socket;
 		this.IV = IV;
 		this.key = key;
@@ -46,7 +48,7 @@ public class FileReceiver extends Thread {
 			input = new BetterDataInputStream(socket.getInputStream());
 			cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
-			
+
 			if (!hasFileSizeRestriction ? true : encryptedFileLength < maxFileLength) {
 				int fileReceiveCounter = (int) encryptedFileLength / 16;
 				
@@ -59,11 +61,13 @@ public class FileReceiver extends Thread {
 				}
 				
 				fileOutputStream.flush();
+				listener.receivingCompleted(file);
 			} else {
 				throw new Exception();
 			}
 		} catch (Exception e) {
 			listener.fileShareError();
+			file.delete();
 		} finally {
 			try {
 				fileOutputStream.close();
