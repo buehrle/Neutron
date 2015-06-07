@@ -1,7 +1,9 @@
 package com.erdlof.neutron.client;
 
+import com.erdlof.neutron.util.UnwrappedObject;
+
 public interface ClientListener {
-	public void connectionEstablished(Partner[] partners);
+	public void connectionEstablished(UnwrappedObject[] partners, UnwrappedObject[] filesOnServer);
 	public void connectionFailed();
 	public void disconnected();
 	public void setDisconnectRequest(int request);

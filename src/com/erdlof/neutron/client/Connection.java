@@ -125,7 +125,18 @@ public class Connection extends Thread {
 			clientID = CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted());
 			
 			serverOutput.sendBytesEncrypted(name.getBytes());
-			listener.connectionEstablished(CommunicationUtils.unwrapClientData(serverInput.getBytesDecrypted()));
+			
+			int nameRequest = serverInput.getRequest();
+			
+			if (nameRequest == Request.LEGAL_NAME) {
+				byte[] wrappedPartnerList = serverInput.getBytesDecrypted();
+				byte[] wrappedFileList = serverInput.getBytesDecrypted();
+				
+				listener.connectionEstablished(CommunicationUtils.unwrapList(wrappedPartnerList), CommunicationUtils.unwrapList(wrappedFileList));
+			} else {
+				listener.setDisconnectRequest(nameRequest);
+				performShutdown();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			listener.connectionFailed();

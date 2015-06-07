@@ -2,8 +2,8 @@ package com.erdlof.neutron.filesharing;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
 import javax.crypto.Cipher;
@@ -16,50 +16,47 @@ public class FileReceiver extends Thread {
 	private Socket socket;
 	private byte[] IV;
 	private SecretKey key;
+	private Cipher cipher;
 	private int maxFileLength;
 	private FileReceivingListener listener;
-	private BetterDataInputStream input;
-	private Cipher cipher;
-	private BufferedOutputStream fileOutputStream;
-	private int encryptedFileLength;
 	private boolean hasFileSizeRestriction = false;
 	private File file;
 	
-	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, int encryptedFileLength, int maxFileLength) throws FileNotFoundException {
-		this(socket, IV, key, listener, destination, encryptedFileLength);
+	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, int maxFileLength) throws IOException {
+		this(socket, IV, key, listener, destination);
 		this.maxFileLength = maxFileLength;
 		this.hasFileSizeRestriction = true;
 	}
 	
-	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, int encryptedFileLength) throws FileNotFoundException {
-		file = new File(destination);
-		file.getParentFile().mkdirs();
-		fileOutputStream = new BufferedOutputStream(new FileOutputStream(file));
+	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination) throws IOException {
 		this.socket = socket;
 		this.IV = IV;
 		this.key = key;
 		this.listener = listener;
-		this.encryptedFileLength = encryptedFileLength;
+		file = new File(destination);
+		file.getParentFile().mkdirs();
+		file.createNewFile();
 	}
 	
 	@Override
 	public void run() {
-		try {
-			input = new BetterDataInputStream(socket.getInputStream());
+		try (BufferedOutputStream fileOutputStream = new BufferedOutputStream(new FileOutputStream(file));
+				BetterDataInputStream input = new BetterDataInputStream(socket.getInputStream())) {
+			
 			cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
 			cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
-
-			if (!hasFileSizeRestriction ? true : encryptedFileLength < maxFileLength) {
-				int fileReceiveCounter = (int) encryptedFileLength / 16;
+			
+			int fileLength = input.readInt();
+			
+			if (!hasFileSizeRestriction ? true : fileLength < maxFileLength) {
+				byte[] tempData = new byte[fileLength];
 				
-				for (int i = 0; i < fileReceiveCounter; i++) {
-					byte[] tempData = new byte[16];
-					input.read(tempData);
-					byte[] decryptedDataPortion = cipher.doFinal(tempData);
-					fileOutputStream.write(decryptedDataPortion, 0, decryptedDataPortion.length);
-					listener.receivingProgress((int) Math.ceil((i / fileReceiveCounter) * 100));
+				for (int i = 0; i < fileLength; i++) {
+					tempData[i] = input.readByte();
+					if (i % 512 == 0) listener.receivingProgress(i);
 				}
 				
+				fileOutputStream.write(cipher.doFinal(tempData));
 				fileOutputStream.flush();
 				listener.receivingCompleted(file);
 			} else {
@@ -68,13 +65,6 @@ public class FileReceiver extends Thread {
 		} catch (Exception e) {
 			listener.fileShareError();
 			file.delete();
-		} finally {
-			try {
-				fileOutputStream.close();
-				input.close();
-				socket.close();
-			} catch (Exception e) {
-			}
 		}
 		
 	}

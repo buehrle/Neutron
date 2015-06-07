@@ -2,19 +2,16 @@ package com.erdlof.neutron.util;
 
 import java.util.List;
 
-import com.erdlof.neutron.client.Partner;
-import com.erdlof.neutron.server.Client;
-
 public class CommunicationUtils {
-	public static byte[] wrapClientData(List<Client> clients) {
+	public static <T extends Wrappable> byte[] wrapList(List<T> list) {
 		//yeah, that IS embarrassing.
 		byte[] tempData;
 		
-		if (!clients.isEmpty()) {
+		if (!list.isEmpty()) {
 			StringBuilder serializedData = new StringBuilder();
 			
-			for (Client client : clients) {
-				serializedData.append(Long.toString(client.getClientID(), 16) + ":" + client.getClientName() + ";");
+			for (T toWrap : list) {
+				serializedData.append(Long.toString(toWrap.getID(), 16) + ":" + toWrap.getName() + ";");
 			}
 			
 			tempData = serializedData.toString().getBytes();
@@ -25,22 +22,22 @@ public class CommunicationUtils {
 		return tempData;
 	}
 	
-	public static Partner[] unwrapClientData(byte[] data) {
+	public static UnwrappedObject[] unwrapList(byte[] data) {
 		if (data.length > 1) {
 			String serializedData = new String(data);
-			String[] tempClients = serializedData.split(";");
+			String[] tempUnwrapped = serializedData.split(";");
 			
-			Partner[] partners = new Partner[tempClients.length];
+			UnwrappedObject[] unwrapped = new UnwrappedObject[tempUnwrapped.length];
 			
-			for (int i = 0; i < tempClients.length; i++) {
-				String[] splitClientData = tempClients[i].split(":");
+			for (int i = 0; i < tempUnwrapped.length; i++) {
+				String[] splitUnwrappedData = tempUnwrapped[i].split(":");
 				
-				partners[i] = new Partner(Long.parseLong(splitClientData[0], 16), splitClientData[1]);
+				unwrapped[i] = new UnwrappedObject(Long.parseLong(splitUnwrappedData[0], 16), splitUnwrappedData[1]);
 			}
 			
-			return partners;
+			return unwrapped;
 		} else {
-			return new Partner[0];
+			return new UnwrappedObject[0];
 		}
 	}
 }

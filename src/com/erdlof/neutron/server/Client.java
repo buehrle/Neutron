@@ -15,8 +15,9 @@ import com.erdlof.neutron.util.CheckUtils;
 import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
+import com.erdlof.neutron.util.Wrappable;
 
-public class Client implements Runnable {
+public class Client implements Runnable, Wrappable {
 	private static final int MAX_COUNTS_UNTIL_TIMEOUT = 1000;
 	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
 
@@ -141,9 +142,12 @@ public class Client implements Runnable {
 			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(clientID)); //send the ID to the client
 			
 			clientName = new String(clientInput.getBytesDecrypted());
-			clientOutput.sendBytesEncrypted(CommunicationUtils.wrapClientData(Main.getActiveClients()));
 			
 			if (CheckUtils.isProperNickname(clientName)) {
+				clientOutput.sendRequest(Request.LEGAL_NAME);
+				clientOutput.sendBytesEncrypted(CommunicationUtils.wrapList(Main.getActiveClients()));
+				clientOutput.sendBytesEncrypted(CommunicationUtils.wrapList(Main.getSharedFiles()));
+				
 				Main.registerClient(this);
 				System.out.println("Just logged in: " + clientName);
 			} else {
@@ -160,11 +164,13 @@ public class Client implements Runnable {
 		Thread.currentThread().interrupt();
 	}
 
-	public String getClientName() {
+	@Override
+	public String getName() {
 		return clientName;
 	}
 
-	public long getClientID() {
+	@Override
+	public long getID() {
 		return clientID;
 	}
 	

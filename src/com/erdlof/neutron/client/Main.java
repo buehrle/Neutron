@@ -16,6 +16,8 @@ import javax.swing.JFrame;
 import javax.swing.UIManager;
 
 import com.erdlof.neutron.util.Request;
+import com.erdlof.neutron.util.UnwrappedObject;
+
 import javax.swing.JMenuBar;
 import javax.swing.JButton;
 import java.awt.BorderLayout;
@@ -45,7 +47,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	
 	private Connection connection;
 	private Toolkit toolkit;
-	private volatile List<Partner> partners;
+	private volatile List<UnwrappedObject> partners;
+	private volatile List<UnwrappedObject> filesOnServer;
 	
 	private JTextField messageInput;
 	private JTextField serverAdress;
@@ -72,7 +75,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	public Main() { //set up the window
 		style = new SimpleAttributeSet();
 		lm = new DefaultListModel<String>();
-		partners = new ArrayList<Partner>();
+		partners = new ArrayList<UnwrappedObject>();
+		filesOnServer = new ArrayList<UnwrappedObject>();
 		
 		try {
 			generator = KeyPairGenerator.getInstance("RSA");
@@ -194,18 +198,30 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 	}
 	
-	private void setPartners(List<Partner> partners) {
+	private void setPartners(List<UnwrappedObject> partners) {
 		synchronized (this.partners) {
 			this.partners = partners;
 		}
 	}
 	
-	private List<Partner> getPartners() {
-		synchronized (this.partners) {
-			return this.partners;
+	private List<UnwrappedObject> getPartners() {
+		synchronized (partners) {
+			return partners;
 		}
 	}
 	
+	private List<UnwrappedObject> getFilesOnServer() {
+		synchronized (filesOnServer) {
+			return filesOnServer;
+		}
+	}
+
+	private void setFilesOnServer(List<UnwrappedObject> filesOnServer) {
+		synchronized (this.filesOnServer) {
+			this.filesOnServer = filesOnServer;
+		}
+	}
+
 	private JTextField getMessageInput() {
 		synchronized (messageInput) {
 			return messageInput;
@@ -225,8 +241,10 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	}
 	
 	@Override
-	public void connectionEstablished(Partner[] partners) { //is called when the connection has been successfully established
-		setPartners(new ArrayList<Partner>(Arrays.asList(partners)));
+	public void connectionEstablished(UnwrappedObject[] partners, UnwrappedObject[] filesOnServer) { //is called when the connection has been successfully established
+		setPartners(new ArrayList<UnwrappedObject>(Arrays.asList(partners)));
+		setFilesOnServer(new ArrayList<UnwrappedObject>(Arrays.asList(filesOnServer)));
+		
 		getlblStatus().setText("Connected.");
 		getMessageProvideBox().setText("");
 	}
@@ -246,18 +264,19 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	}
 	
 	public void textMessage(long senderID, byte[] message) {
-		appendText("["  + getPartnerByID(senderID).getName() + "] " + new String(message), Color.BLACK);
+		appendText("["  + UnwrappedObject.getUnwrappedObjectByID(partners, senderID).getName() + "] " + new String(message), Color.BLACK);
 	}
 	
 	public void clientConnected(long senderID, byte[] name) {
 		appendText(new String(name) + " just logged in.", Color.RED);
-		getPartners().add(new Partner(senderID, new String(name)));
+		getPartners().add(new UnwrappedObject(senderID, new String(name)));
 		renderClients();
 	}
 	
 	public void clientDisconnected(long senderID) {
-		appendText(getPartnerByID(senderID).getName() + " just logged out.", Color.RED);
-		getPartners().remove(getPartnerByID(senderID));
+		UnwrappedObject tempPartner = UnwrappedObject.getUnwrappedObjectByID(partners, senderID);
+		appendText(tempPartner.getName() + " just logged out.", Color.RED);
+		getPartners().remove(tempPartner);
 		renderClients();
 	}
 	
@@ -265,7 +284,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		synchronized (clientList) {
 			lm.removeAllElements();
 		
-			for (Partner partner : getPartners()) {
+			for (UnwrappedObject partner : getPartners()) {
 				lm.addElement(partner.getName());
 			}
 		}
@@ -279,13 +298,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 				messageProvideBox.select(mainMessages.getLength(), mainMessages.getLength());
 			} catch (BadLocationException e) {}
 		}
-	}
-	
-	private Partner getPartnerByID(long ID) {
-		for (Partner partner : getPartners()) {
-			if (partner.getID() == ID) return partner;
-		}
-		return null;
 	}
 	
 	@Override
