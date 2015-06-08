@@ -45,6 +45,8 @@ public class FileSender extends Thread {
 				output.write(encTempData[i]);
 				output.flush();
 				if (i % 512 == 0) listener.sendingProgress(i);
+				
+				if (Thread.currentThread().isInterrupted()) throw new Exception();
 			}
 			
 			listener.sendingCompleted();

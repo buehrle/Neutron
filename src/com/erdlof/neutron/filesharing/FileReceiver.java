@@ -54,6 +54,8 @@ public class FileReceiver extends Thread {
 				for (int i = 0; i < fileLength; i++) {
 					tempData[i] = input.readByte();
 					if (i % 512 == 0) listener.receivingProgress(i);
+					
+					if (Thread.currentThread().isInterrupted()) throw new Exception();
 				}
 				
 				fileOutputStream.write(cipher.doFinal(tempData));
@@ -63,8 +65,8 @@ public class FileReceiver extends Thread {
 				throw new Exception();
 			}
 		} catch (Exception e) {
-			listener.fileShareError();
 			file.delete();
+			listener.fileShareError();
 		}
 		
 	}

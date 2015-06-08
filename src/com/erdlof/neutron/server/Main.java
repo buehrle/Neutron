@@ -14,11 +14,13 @@ import com.erdlof.neutron.util.Request;
 
 public class Main {
 	private static final int CONST_PORT = 12345; //TODO: get this into an external config file
+	private static final int CONST_FILE_PORT = 12346;
 	private static ServerSocket server;
+	private static ServerSocket fileServer;
 	private static ExecutorService executor;
 	private static Random newIDCreator;
-	private static List<Client> activeClients;
-	private static List<SharedFile> sharedFiles;
+	private static volatile List<Client> activeClients;
+	private static volatile List<SharedFile> sharedFiles;
 	
 	public static void main(String[] args) {
 		try {
@@ -37,6 +39,7 @@ public class Main {
 	
 	private static void init() throws IOException {
 		server = new ServerSocket(CONST_PORT); //open the port
+		fileServer = new ServerSocket(CONST_FILE_PORT);
 		executor = Executors.newCachedThreadPool();
 		newIDCreator = new Random();
 		activeClients = new ArrayList<Client>();
@@ -80,5 +83,18 @@ public class Main {
 		long fileID = newIDCreator.nextLong();
 		getSharedFiles().add(new SharedFile(file, fileID));
 		sendToAllClients(Request.NEW_FILE, fileID, file.getName().getBytes());
+	}
+	
+	public static synchronized File getFileByID(long fileID) {
+		for (SharedFile file : getSharedFiles()) {
+			if (file.getID() == fileID) return file.getFile();
+		}
+		return null;
+	}
+	
+	public static ServerSocket getFileServer() {
+		synchronized (fileServer) {
+			return fileServer;
+		}
 	}
 }

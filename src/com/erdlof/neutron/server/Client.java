@@ -1,5 +1,6 @@
 package com.erdlof.neutron.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.PublicKey;
@@ -9,6 +10,10 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import com.erdlof.neutron.filesharing.FileReceiver;
+import com.erdlof.neutron.filesharing.FileReceivingListener;
+import com.erdlof.neutron.filesharing.FileSender;
+import com.erdlof.neutron.filesharing.FileSendingListener;
 import com.erdlof.neutron.streams.BetterDataInputStream;
 import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.CheckUtils;
@@ -17,7 +22,7 @@ import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 import com.erdlof.neutron.util.Wrappable;
 
-public class Client implements Runnable, Wrappable {
+public class Client implements Runnable, Wrappable, FileReceivingListener, FileSendingListener {
 	private static final int MAX_COUNTS_UNTIL_TIMEOUT = 1000;
 	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
 
@@ -69,11 +74,15 @@ public class Client implements Runnable, Wrappable {
 								byte[] tempData = clientInput.getBytesDecrypted();
 								if (tempData.length > 0) Main.sendToAllClients(request, clientID, tempData);
 								break;
-							case Request.SEND_FILE:
-								//TODO add filesharing
+							case Request.SEND_FILE: //can I pls send a file to the server
+								String fileName = new String(clientInput.getBytesDecrypted());
+								
+								new FileReceiver(Main.getFileServer().accept(), IV, secretKey, this, fileName).start(); //TODO CONFIG FILES for the standard file destination
 								break;
 							case Request.GET_FILE:
-								//TODO filesharing #2
+								long fileID = CryptoUtils.byteArrayToLong(clientInput.getBytesDecrypted());
+								
+								new FileSender(Main.getFileServer().accept(), IV, secretKey, this, Main.getFileByID(fileID)).start();
 								break;
 							case Request.REGULAR_DISCONNECT:
 								System.out.println("Regular disconnect.");
@@ -192,4 +201,21 @@ public class Client implements Runnable, Wrappable {
 			performShutdown(); //ask the current loop to exit and close all resources
 		}
 	}
+
+	@Override
+	public void fileShareError() {} //eventually we will do this later 
+
+	@Override
+	public void receivingProgress(int bytesReceived) {}
+
+	@Override
+	public void receivingCompleted(File file) {
+		Main.registerFile(file);
+	}
+
+	@Override
+	public void sendingProgress(int bytesSent) {}
+
+	@Override
+	public void sendingCompleted() {}
 }
