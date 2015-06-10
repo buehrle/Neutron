@@ -218,4 +218,12 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 
 	@Override
 	public void sendingCompleted() {}
+
+	@Override
+	public synchronized boolean isFilesharingCanceled() {
+		return Thread.currentThread().isInterrupted();
+	}
+
+	@Override
+	public void setFileSize(int size) {}
 }

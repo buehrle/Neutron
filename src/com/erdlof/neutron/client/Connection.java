@@ -1,6 +1,8 @@
 package com.erdlof.neutron.client;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.security.KeyPair;
 
@@ -8,6 +10,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import com.erdlof.neutron.filesharing.FileSender;
 import com.erdlof.neutron.streams.BetterDataInputStream;
 import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.CommunicationUtils;
@@ -174,5 +177,14 @@ public class Connection extends Thread {
 			serverOutput.sendRequest(Request.REGULAR_DISCONNECT);
 		} catch (Exception e) {}
 		performShutdown();
+	}
+	
+	public void uploadFile(File file) {
+		try {
+			sendData(Request.SEND_FILE, file.getName().getBytes());
+			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Uploading file...", "", 0, 0);
+			new FileSender(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, file);
+		} catch (IOException e) {
+		}
 	}
 }

@@ -38,6 +38,7 @@ public class FileSender extends Thread {
 			
 			byte[] encTempData = cipher.doFinal(tempData);
 			
+			listener.setFileSize(encTempData.length);
 			output.writeInt(encTempData.length);
 			output.flush();
 			
@@ -46,10 +47,11 @@ public class FileSender extends Thread {
 				output.flush();
 				if (i % 512 == 0) listener.sendingProgress(i);
 				
-				if (Thread.currentThread().isInterrupted()) throw new Exception();
+				if (listener.isFilesharingCanceled()) throw new FileshareCanceledException();
 			}
 			
 			listener.sendingCompleted();
+		} catch (FileshareCanceledException e) {
 		} catch (Exception e) {
 			listener.fileShareError();
 		}

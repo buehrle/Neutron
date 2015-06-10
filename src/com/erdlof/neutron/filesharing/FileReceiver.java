@@ -47,6 +47,7 @@ public class FileReceiver extends Thread {
 			cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(IV));
 			
 			int fileLength = input.readInt();
+			listener.setFileSize(fileLength);
 			
 			if (!hasFileSizeRestriction ? true : fileLength < maxFileLength) {
 				byte[] tempData = new byte[fileLength];
@@ -55,7 +56,7 @@ public class FileReceiver extends Thread {
 					tempData[i] = input.readByte();
 					if (i % 512 == 0) listener.receivingProgress(i);
 					
-					if (Thread.currentThread().isInterrupted()) throw new Exception();
+					if (listener.isFilesharingCanceled()) throw new FileshareCanceledException();
 				}
 				
 				fileOutputStream.write(cipher.doFinal(tempData));
@@ -64,6 +65,7 @@ public class FileReceiver extends Thread {
 			} else {
 				throw new Exception();
 			}
+		} catch (FileshareCanceledException e) {
 		} catch (Exception e) {
 			file.delete();
 			listener.fileShareError();

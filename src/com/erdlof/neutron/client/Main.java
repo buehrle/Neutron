@@ -15,6 +15,7 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
+import com.erdlof.neutron.filesharing.FileSender;
 import com.erdlof.neutron.util.Request;
 import com.erdlof.neutron.util.UnwrappedObject;
 
@@ -23,6 +24,7 @@ import javax.swing.JButton;
 import java.awt.BorderLayout;
 
 import javax.swing.DefaultListModel;
+import javax.swing.JFileChooser;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JPanel;
@@ -33,6 +35,8 @@ import java.awt.CardLayout;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.JLabel;
 import java.awt.event.KeyEvent;
+import java.io.File;
+
 import javax.swing.JScrollPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
@@ -67,6 +71,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private JPanel clientListContainer;
 	private JList<String> clientList;
 	private DefaultListModel<String> lm;
+	private JFileChooser fileChooser;
+	private JButton btnUploadFile;
 	
 	public static void main(String[] args) {
 		new Main();
@@ -77,6 +83,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		lm = new DefaultListModel<String>();
 		partners = new ArrayList<UnwrappedObject>();
 		filesOnServer = new ArrayList<UnwrappedObject>();
+		fileChooser = new JFileChooser();
 		
 		try {
 			generator = KeyPairGenerator.getInstance("RSA");
@@ -113,6 +120,10 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private void initializeComponents() { //this is made by WindowBuilder as I'm too bad to design GUIs.
 		JMenuBar mainMenuBar = new JMenuBar();
 		setJMenuBar(mainMenuBar);
+		
+		btnUploadFile = new JButton("Upload file");
+		btnUploadFile.addActionListener(this);
+		mainMenuBar.add(btnUploadFile);
 		getContentPane().setLayout(new BorderLayout(0, 0));
 		
 		panel = new JPanel();
@@ -240,6 +251,12 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 	}
 	
+	private JButton getbtnUploadFile() {
+		synchronized (btnUploadFile) {
+			return btnUploadFile;
+		}
+	}
+	
 	@Override
 	public void connectionEstablished(UnwrappedObject[] partners, UnwrappedObject[] filesOnServer) { //is called when the connection has been successfully established
 		setPartners(new ArrayList<UnwrappedObject>(Arrays.asList(partners)));
@@ -338,6 +355,15 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 				getlblStatus().setText("Connecting...");
 			} else {
 				connection.disconnect();
+			}
+		} else if (e.getSource() == getbtnUploadFile()) {
+			if (connection != null) {
+				int returnVal = fileChooser.showOpenDialog(null);
+				
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+					connection.uploadFile(file);
+				}
 			}
 		}
 	}
