@@ -50,7 +50,7 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 		try {
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
 			
-			keyGen.init(256);
+			keyGen.init(256); //the Oracle-JRE rejects keys with a length of > 128 by default, because of some terrible US-laws. FUCK
 			secretKey = keyGen.generateKey(); //generate the AES-key we will use to communicate
 			
 			IV = CryptoUtils.createTotallyRandomIV(); //generate the initialization vector
