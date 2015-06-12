@@ -77,7 +77,7 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 							case Request.SEND_FILE: //can I pls send a file to the server
 								String fileName = new String(clientInput.getBytesDecrypted());
 								
-								new FileReceiver(Main.getFileServer().accept(), IV, secretKey, this, System.getProperty("user.dir") + File.pathSeparator + fileName).start(); //TODO CONFIG FILES for the standard file destination
+								new FileReceiver(Main.getFileServer().accept(), IV, secretKey, this, "/home/erdlof/workspace/" + fileName).start(); //TODO CONFIG FILES for the standard file destination
 								break;
 							case Request.GET_FILE:
 								long fileID = CryptoUtils.byteArrayToLong(clientInput.getBytesDecrypted());

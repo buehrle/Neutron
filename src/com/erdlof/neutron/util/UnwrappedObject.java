@@ -10,6 +10,11 @@ public class UnwrappedObject implements Wrappable {
 		this.ID = ID;
 		this.name = name;
 	}
+	
+	public UnwrappedObject(UnwrappedObject origin) {
+		this.ID = origin.getID();
+		this.name = origin.getName();
+	}
 
 	@Override
 	public long getID() {

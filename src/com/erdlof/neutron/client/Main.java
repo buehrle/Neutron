@@ -44,13 +44,12 @@ import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.TitledBorder;
 
-public class Main extends JFrame implements ClientListener, ActionListener, KeyListener, WindowListener {
+public class Main extends JFrame implements ClientListener, ActionListener, KeyListener, WindowListener, FileSelectorListener {
 	private static final long serialVersionUID = 527099896996818525L;
 	
 	private Connection connection;
 	private Toolkit toolkit;
 	private volatile List<Partner> partners;
-	private volatile List<SharedFile> filesOnServer;
 	
 	private JTextField messageInput;
 	private JTextField serverAdress;
@@ -70,7 +69,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private JList<String> clientList;
 	private DefaultListModel<String> lm;
 	private JFileChooser fileChooser;
-	private JButton btnUploadFile;
+	private JButton btnShowFiles;
+	private FileList fileList;
 	
 	public static void main(String[] args) {
 		new Main();
@@ -80,7 +80,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		style = new SimpleAttributeSet();
 		lm = new DefaultListModel<String>();
 		partners = new ArrayList<Partner>();
-		filesOnServer = new ArrayList<SharedFile>();
+
 		fileChooser = new JFileChooser();
 		
 		try {
@@ -94,7 +94,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); //make it look beautiful.
 		} catch (Exception e) {
-			e.printStackTrace();
 		}
 		
 		toolkit = Toolkit.getDefaultToolkit();
@@ -105,6 +104,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		int y = (int) (toolkit.getScreenSize().height - this.getHeight()) / 2;
 		
 		setLocation(x, y);
+		fileList = new FileList(this, getLocation());
 		
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); //we do this on our own
 		this.setMinimumSize(new Dimension(700, 400));
@@ -119,9 +119,9 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		JMenuBar mainMenuBar = new JMenuBar();
 		setJMenuBar(mainMenuBar);
 		
-		btnUploadFile = new JButton("Upload file");
-		btnUploadFile.addActionListener(this);
-		mainMenuBar.add(btnUploadFile);
+		btnShowFiles = new JButton("Show shared files");
+		btnShowFiles.addActionListener(this);
+		mainMenuBar.add(btnShowFiles);
 		getContentPane().setLayout(new BorderLayout(0, 0));
 		
 		panel = new JPanel();
@@ -218,18 +218,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 			return partners;
 		}
 	}
-	
-	private List<SharedFile> getFilesOnServer() {
-		synchronized (filesOnServer) {
-			return filesOnServer;
-		}
-	}
-
-	private void setFilesOnServer(List<SharedFile> filesOnServer) {
-		synchronized (this.filesOnServer) {
-			this.filesOnServer = filesOnServer;
-		}
-	}
 
 	private JTextField getMessageInput() {
 		synchronized (messageInput) {
@@ -249,16 +237,16 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 	}
 	
-	private JButton getbtnUploadFile() {
-		synchronized (btnUploadFile) {
-			return btnUploadFile;
+	private JButton getBtnShowFiles() {
+		synchronized (btnShowFiles) {
+			return btnShowFiles;
 		}
 	}
 	
 	@Override
 	public void connectionEstablished(List<Partner> partners, List<SharedFile> filesOnServer) { //is called when the connection has been successfully established
 		setPartners(partners);
-		setFilesOnServer(filesOnServer);
+		fileList.setFiles(filesOnServer);
 		
 		getlblStatus().setText("Connected.");
 		getMessageProvideBox().setText("");
@@ -298,7 +286,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	@Override
 	public void newFile(long fileID, byte[] name) {
 		appendText("A new file was uploaded: " + new String(name), Color.BLUE);
-		getFilesOnServer().add(new SharedFile(fileID, new String(name)));
+		fileList.newFile(new SharedFile(fileID, new String(name)));
 	}
 	
 	private void renderClients() {
@@ -360,15 +348,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 			} else {
 				connection.disconnect();
 			}
-		} else if (e.getSource() == getbtnUploadFile()) {
-			if (connection != null) {
-				int returnVal = fileChooser.showOpenDialog(this);
-				
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					File file = fileChooser.getSelectedFile();
-					connection.uploadFile(file);
-				}
-			}
+		} else if (e.getSource() == getBtnShowFiles()) {
+			fileList.setVisible(true);
 		}
 	}
 
@@ -395,6 +376,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	@Override
 	public void windowClosing(WindowEvent arg0) {
 		if (connection != null) connection.disconnect();
+		fileList.dispose();
 		dispose();
 	}
 
@@ -409,6 +391,31 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 
 	@Override
 	public void windowOpened(WindowEvent arg0) {}
+
+	@Override
+	public void downloadFile(long ID) {
+		if (connection != null) {
+			int returnVal = fileChooser.showSaveDialog(this);
+			
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				File file = fileChooser.getSelectedFile();
+				
+				connection.downloadFile(file.getAbsolutePath(), ID);
+			}
+		}
+	}
+
+	@Override
+	public void uploadFile() {
+		if (connection != null) {
+			int returnVal = fileChooser.showOpenDialog(this);
+			
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				File file = fileChooser.getSelectedFile();
+				connection.uploadFile(file);
+			}
+		}
+	}
 
 	
 }

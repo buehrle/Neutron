@@ -44,19 +44,18 @@ public class FileSender extends Thread {
 			output.writeInt(encTempData.length);
 			output.flush();
 			
-			int sendCount = (int) Math.floor(encTempData.length / 512);
-			int restToSend = encTempData.length % 512;
-			
-			for (int i = 0; i < sendCount; i++) {
-				for (int i1 = 0; i1 < 512; i++) {
-					output.write(encTempData[i * 512 + i1]);
-				}
+			for (int i = 0; i < encTempData.length; i++) {
+				output.write(encTempData[i]);
 				
-				output.flush();
-				listener.sendingProgress(i);
+				if (i % 1024 == 0) {
+					output.flush();
+					listener.sendingProgress(i);
+				}
 				
 				if (listener.isFilesharingCanceled()) throw new FileshareCanceledException();
 			}
+			
+			output.flush();
 			
 			listener.sendingCompleted();
 		} catch (FileshareCanceledException e) {

@@ -4,17 +4,21 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.KeyPair;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import com.erdlof.neutron.filesharing.FileReceiver;
 import com.erdlof.neutron.filesharing.FileSender;
 import com.erdlof.neutron.streams.BetterDataInputStream;
 import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
+import com.erdlof.neutron.util.UnwrappedObject;
 
 public class Connection extends Thread {
 	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
@@ -69,7 +73,8 @@ public class Connection extends Thread {
 							listener.clientConnected(CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
 							break;
 						case Request.NEW_FILE:
-							
+							listener.newFile(CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
+							break;
 						default:
 							listener.setDisconnectRequest(request);
 							performShutdown();
@@ -136,7 +141,18 @@ public class Connection extends Thread {
 				byte[] wrappedPartnerList = serverInput.getBytesDecrypted();
 				byte[] wrappedFileList = serverInput.getBytesDecrypted();
 				
-				listener.connectionEstablished(CommunicationUtils.<Partner>unwrapList(wrappedPartnerList),(CommunicationUtils.<SharedFile>unwrapList(wrappedFileList)));
+				List<Partner> partnerList = new ArrayList<Partner>();
+				List<SharedFile> sharedFileList = new ArrayList<SharedFile>();
+				
+				for (UnwrappedObject partner : CommunicationUtils.unwrapList(wrappedPartnerList)) {
+					partnerList.add(new Partner(partner));
+				}
+				
+				for (UnwrappedObject sharedFile : CommunicationUtils.unwrapList(wrappedFileList)) {
+					sharedFileList.add(new SharedFile(sharedFile));
+				}
+				
+				listener.connectionEstablished(partnerList, sharedFileList);
 			} else {
 				listener.setDisconnectRequest(nameRequest);
 				performShutdown();
@@ -185,6 +201,15 @@ public class Connection extends Thread {
 			sendData(Request.SEND_FILE, file.getName().getBytes());
 			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Uploading file...", "", 0, 0);
 			new FileSender(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, file).start();
+		} catch (IOException e) {
+		}
+	}
+	
+	public void downloadFile(String path, long fileID) {
+		try {
+			sendData(Request.GET_FILE, CryptoUtils.longToByteArray(fileID));
+			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Downloading file...", "", 0, 0);
+			new FileReceiver(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, path);
 		} catch (IOException e) {
 		}
 	}

@@ -8,7 +8,6 @@ import com.erdlof.neutron.filesharing.FileReceivingListener;
 import com.erdlof.neutron.filesharing.FileSendingListener;
 
 public class FileshareIndicatorMonitor extends ProgressMonitor implements FileSendingListener, FileReceivingListener {
-
 	public FileshareIndicatorMonitor(Object message, String note, int min, int max) {
 		super(null, message, note, min, max);
 	}

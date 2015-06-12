@@ -22,23 +22,22 @@ public class CommunicationUtils {
 		return tempData;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <T extends UnwrappedObject> List<T> unwrapList(byte[] data) {
+	public static List<UnwrappedObject> unwrapList(byte[] data) {
 		if (data.length > 1) {
 			String serializedData = new String(data);
 			String[] tempUnwrapped = serializedData.split(";");
 			
-			List<T> unwrappedElements = new ArrayList<T>();
+			List<UnwrappedObject> unwrappedElements = new ArrayList<UnwrappedObject>();
 			
 			for (int i = 0; i < tempUnwrapped.length; i++) {
 				String[] splitUnwrappedData = tempUnwrapped[i].split(":");
 				
-				unwrappedElements.add((T) new UnwrappedObject(Long.parseLong(splitUnwrappedData[0], 16), splitUnwrappedData[1]));
+				unwrappedElements.add(new UnwrappedObject(Long.parseLong(splitUnwrappedData[0], 16), splitUnwrappedData[1]));
 			}
 			
 			return unwrappedElements;
 		} else {
-			return new ArrayList<T>();
+			return new ArrayList<UnwrappedObject>();
 		}
 	}
 }
