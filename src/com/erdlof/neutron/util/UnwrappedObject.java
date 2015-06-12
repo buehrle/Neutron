@@ -21,11 +21,10 @@ public class UnwrappedObject implements Wrappable {
 		return name;
 	}
 	
-	public static UnwrappedObject getUnwrappedObjectByID(List<UnwrappedObject> list, long ID) {
-		for (UnwrappedObject object : list) {
-			if (object.getID() == ID) return object;
+	public static <T extends UnwrappedObject> T getUnwrappedObjectByID (List<T> list, long ID) {
+		for (T element : list) {
+			if (element.getID() == ID) return element;
 		}
 		return null;
 	}
-
 }

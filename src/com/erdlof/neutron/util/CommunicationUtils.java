@@ -1,10 +1,10 @@
 package com.erdlof.neutron.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CommunicationUtils {
-	public static <T extends Wrappable> byte[] wrapList(List<T> list) {
-		//yeah, that IS embarrassing.
+	public static <T extends Wrappable> byte[] wrapList(List<T> list) { //requires a class that implements wrappable. to wrap means, to serialize both ID and name of the object.
 		byte[] tempData;
 		
 		if (!list.isEmpty()) {
@@ -21,23 +21,24 @@ public class CommunicationUtils {
 		
 		return tempData;
 	}
-	
-	public static UnwrappedObject[] unwrapList(byte[] data) {
+
+	@SuppressWarnings("unchecked")
+	public static <T extends UnwrappedObject> List<T> unwrapList(byte[] data) {
 		if (data.length > 1) {
 			String serializedData = new String(data);
 			String[] tempUnwrapped = serializedData.split(";");
 			
-			UnwrappedObject[] unwrapped = new UnwrappedObject[tempUnwrapped.length];
+			List<T> unwrappedElements = new ArrayList<T>();
 			
 			for (int i = 0; i < tempUnwrapped.length; i++) {
 				String[] splitUnwrappedData = tempUnwrapped[i].split(":");
 				
-				unwrapped[i] = new UnwrappedObject(Long.parseLong(splitUnwrappedData[0], 16), splitUnwrappedData[1]);
+				unwrappedElements.add((T) new UnwrappedObject(Long.parseLong(splitUnwrappedData[0], 16), splitUnwrappedData[1]));
 			}
 			
-			return unwrapped;
+			return unwrappedElements;
 		} else {
-			return new UnwrappedObject[0];
+			return new ArrayList<T>();
 		}
 	}
 }

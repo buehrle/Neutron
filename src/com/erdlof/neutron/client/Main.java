@@ -9,13 +9,11 @@ import java.awt.event.WindowListener;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
-import com.erdlof.neutron.filesharing.FileSender;
 import com.erdlof.neutron.util.Request;
 import com.erdlof.neutron.util.UnwrappedObject;
 
@@ -51,8 +49,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	
 	private Connection connection;
 	private Toolkit toolkit;
-	private volatile List<UnwrappedObject> partners;
-	private volatile List<UnwrappedObject> filesOnServer;
+	private volatile List<Partner> partners;
+	private volatile List<SharedFile> filesOnServer;
 	
 	private JTextField messageInput;
 	private JTextField serverAdress;
@@ -81,8 +79,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	public Main() { //set up the window
 		style = new SimpleAttributeSet();
 		lm = new DefaultListModel<String>();
-		partners = new ArrayList<UnwrappedObject>();
-		filesOnServer = new ArrayList<UnwrappedObject>();
+		partners = new ArrayList<Partner>();
+		filesOnServer = new ArrayList<SharedFile>();
 		fileChooser = new JFileChooser();
 		
 		try {
@@ -140,7 +138,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		loginContainer.setLayout(new MigLayout("", "[200px,grow,left]", "[19px][19px][][][grow][][][][][][][][][]"));
 		
 		serverAdress = new JTextField();
-		loginContainer.add(serverAdress, "cell 0 0,alignx left,aligny top");
+		loginContainer.add(serverAdress, "cell 0 0,growx,aligny bottom");
 		serverAdress.setColumns(20);
 		
 		clientName = new JTextField();
@@ -209,25 +207,25 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 	}
 	
-	private void setPartners(List<UnwrappedObject> partners) {
+	private void setPartners(List<Partner> partners) {
 		synchronized (this.partners) {
 			this.partners = partners;
 		}
 	}
 	
-	private List<UnwrappedObject> getPartners() {
+	private List<Partner> getPartners() {
 		synchronized (partners) {
 			return partners;
 		}
 	}
 	
-	private List<UnwrappedObject> getFilesOnServer() {
+	private List<SharedFile> getFilesOnServer() {
 		synchronized (filesOnServer) {
 			return filesOnServer;
 		}
 	}
 
-	private void setFilesOnServer(List<UnwrappedObject> filesOnServer) {
+	private void setFilesOnServer(List<SharedFile> filesOnServer) {
 		synchronized (this.filesOnServer) {
 			this.filesOnServer = filesOnServer;
 		}
@@ -258,9 +256,9 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	}
 	
 	@Override
-	public void connectionEstablished(UnwrappedObject[] partners, UnwrappedObject[] filesOnServer) { //is called when the connection has been successfully established
-		setPartners(new ArrayList<UnwrappedObject>(Arrays.asList(partners)));
-		setFilesOnServer(new ArrayList<UnwrappedObject>(Arrays.asList(filesOnServer)));
+	public void connectionEstablished(List<Partner> partners, List<SharedFile> filesOnServer) { //is called when the connection has been successfully established
+		setPartners(partners);
+		setFilesOnServer(filesOnServer);
 		
 		getlblStatus().setText("Connected.");
 		getMessageProvideBox().setText("");
@@ -286,7 +284,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	
 	public void clientConnected(long senderID, byte[] name) {
 		appendText(new String(name) + " just logged in.", Color.RED);
-		getPartners().add(new UnwrappedObject(senderID, new String(name)));
+		getPartners().add(new Partner(senderID, new String(name)));
 		renderClients();
 	}
 	
@@ -295,6 +293,12 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		appendText(tempPartner.getName() + " just logged out.", Color.RED);
 		getPartners().remove(tempPartner);
 		renderClients();
+	}
+	
+	@Override
+	public void newFile(long fileID, byte[] name) {
+		appendText("A new file was uploaded: " + new String(name), Color.BLUE);
+		getFilesOnServer().add(new SharedFile(fileID, new String(name)));
 	}
 	
 	private void renderClients() {
@@ -358,7 +362,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 			}
 		} else if (e.getSource() == getbtnUploadFile()) {
 			if (connection != null) {
-				int returnVal = fileChooser.showOpenDialog(null);
+				int returnVal = fileChooser.showOpenDialog(this);
 				
 				if (returnVal == JFileChooser.APPROVE_OPTION) {
 					File file = fileChooser.getSelectedFile();
@@ -405,4 +409,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 
 	@Override
 	public void windowOpened(WindowEvent arg0) {}
+
+	
 }

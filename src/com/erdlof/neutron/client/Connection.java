@@ -2,7 +2,6 @@ package com.erdlof.neutron.client;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.security.KeyPair;
 
@@ -69,6 +68,8 @@ public class Connection extends Thread {
 						case Request.CLIENT_CONNECT_NOTIFICATION:
 							listener.clientConnected(CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted()), serverInput.getBytesDecrypted());
 							break;
+						case Request.NEW_FILE:
+							
 						default:
 							listener.setDisconnectRequest(request);
 							performShutdown();
@@ -135,7 +136,7 @@ public class Connection extends Thread {
 				byte[] wrappedPartnerList = serverInput.getBytesDecrypted();
 				byte[] wrappedFileList = serverInput.getBytesDecrypted();
 				
-				listener.connectionEstablished(CommunicationUtils.unwrapList(wrappedPartnerList), CommunicationUtils.unwrapList(wrappedFileList));
+				listener.connectionEstablished(CommunicationUtils.<Partner>unwrapList(wrappedPartnerList),(CommunicationUtils.<SharedFile>unwrapList(wrappedFileList)));
 			} else {
 				listener.setDisconnectRequest(nameRequest);
 				performShutdown();
@@ -183,7 +184,7 @@ public class Connection extends Thread {
 		try {
 			sendData(Request.SEND_FILE, file.getName().getBytes());
 			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Uploading file...", "", 0, 0);
-			new FileSender(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, file);
+			new FileSender(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, file).start();
 		} catch (IOException e) {
 		}
 	}

@@ -21,6 +21,8 @@ public class FileSender extends Thread {
 	
 	public FileSender(Socket socket, byte[] IV, SecretKey key, FileSendingListener listener, File source) {
 		this.socket = socket;
+		this.IV = IV;
+		this.key = key;
 		this.listener = listener;
 		this.source = source;
 	}
@@ -42,10 +44,16 @@ public class FileSender extends Thread {
 			output.writeInt(encTempData.length);
 			output.flush();
 			
-			for (int i = 0; i < encTempData.length; i++) {
-				output.write(encTempData[i]);
+			int sendCount = (int) Math.floor(encTempData.length / 512);
+			int restToSend = encTempData.length % 512;
+			
+			for (int i = 0; i < sendCount; i++) {
+				for (int i1 = 0; i1 < 512; i++) {
+					output.write(encTempData[i * 512 + i1]);
+				}
+				
 				output.flush();
-				if (i % 512 == 0) listener.sendingProgress(i);
+				listener.sendingProgress(i);
 				
 				if (listener.isFilesharingCanceled()) throw new FileshareCanceledException();
 			}
@@ -53,6 +61,7 @@ public class FileSender extends Thread {
 			listener.sendingCompleted();
 		} catch (FileshareCanceledException e) {
 		} catch (Exception e) {
+			e.printStackTrace();
 			listener.fileShareError();
 		}
 		

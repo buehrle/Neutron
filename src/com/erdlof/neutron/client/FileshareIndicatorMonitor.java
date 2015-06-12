@@ -27,6 +27,7 @@ public class FileshareIndicatorMonitor extends ProgressMonitor implements FileSe
 	@Override
 	public void receivingCompleted(File file) {
 		this.setNote("Receiving file completed!");
+		
 	}
 
 	@Override
