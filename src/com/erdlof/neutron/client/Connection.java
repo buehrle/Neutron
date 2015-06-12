@@ -209,7 +209,7 @@ public class Connection extends Thread {
 		try {
 			sendData(Request.GET_FILE, CryptoUtils.longToByteArray(fileID));
 			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Downloading file...", "", 0, 0);
-			new FileReceiver(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, path);
+			new FileReceiver(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, path).start();
 		} catch (IOException e) {
 		}
 	}

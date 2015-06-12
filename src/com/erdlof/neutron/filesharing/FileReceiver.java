@@ -67,6 +67,7 @@ public class FileReceiver extends Thread {
 			}
 		} catch (FileshareCanceledException e) {
 		} catch (Exception e) {
+			e.printStackTrace();
 			file.delete();
 			listener.fileShareError();
 		}

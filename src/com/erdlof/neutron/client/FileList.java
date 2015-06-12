@@ -74,6 +74,8 @@ public class FileList extends JFrame implements ActionListener {
 	
 	public void setFiles(List<SharedFile> files) {
 		synchronized (lm) {
+			lm.removeAllElements();
+			
 			for (SharedFile file : files) {
 				lm.addElement(file);
 			}
