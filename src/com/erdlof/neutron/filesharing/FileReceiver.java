@@ -21,18 +21,20 @@ public class FileReceiver extends Thread {
 	private FileReceivingListener listener;
 	private boolean hasFileSizeRestriction = false;
 	private File file;
+	private final int bufferSize;
 	
-	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, int maxFileLength) throws IOException {
-		this(socket, IV, key, listener, destination);
+	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, final int bufferSize, int maxFileLength) throws IOException {
+		this(socket, IV, key, listener, destination, bufferSize);
 		this.maxFileLength = maxFileLength;
 		this.hasFileSizeRestriction = true;
 	}
 	
-	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination) throws IOException {
+	public FileReceiver(Socket socket, byte[] IV, SecretKey key, FileReceivingListener listener, String destination, final int bufferSize) throws IOException {
 		this.socket = socket;
 		this.IV = IV;
 		this.key = key;
 		this.listener = listener;
+		this.bufferSize = bufferSize;
 		file = new File(destination);
 		file.getParentFile().mkdirs();
 		file.createNewFile();
@@ -54,7 +56,7 @@ public class FileReceiver extends Thread {
 				
 				for (int i = 0; i < fileLength; i++) {
 					tempData[i] = input.readByte();
-					if (i % 512 == 0) listener.receivingProgress(i);
+					if (i % bufferSize == 0) listener.receivingProgress(i);
 					
 					if (listener.isFilesharingCanceled()) throw new FileshareCanceledException();
 				}

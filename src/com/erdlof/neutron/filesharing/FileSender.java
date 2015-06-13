@@ -18,8 +18,10 @@ public class FileSender extends Thread {
 	private Cipher cipher;
 	private FileSendingListener listener;
 	private File source;
+	private final int bufferSize;
 	
-	public FileSender(Socket socket, byte[] IV, SecretKey key, FileSendingListener listener, File source) {
+	public FileSender(Socket socket, byte[] IV, SecretKey key, FileSendingListener listener, File source, final int bufferSize) {
+		this.bufferSize = bufferSize;
 		this.socket = socket;
 		this.IV = IV;
 		this.key = key;
@@ -47,7 +49,7 @@ public class FileSender extends Thread {
 			for (int i = 0; i < encTempData.length; i++) {
 				output.write(encTempData[i]);
 				
-				if (i % 1024 == 0) {
+				if (i % bufferSize == 0) {
 					output.flush();
 					listener.sendingProgress(i);
 				}

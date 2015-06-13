@@ -50,7 +50,7 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 		try {
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
 			
-			keyGen.init(256); //the Oracle-JRE rejects keys with a length of > 128 by default, because of some terrible US-laws. FUCK
+			keyGen.init(128); //the Oracle-JRE rejects keys with a length of > 128 by default, because of some terrible US-laws. FUCK
 			secretKey = keyGen.generateKey(); //generate the AES-key we will use to communicate
 			
 			IV = CryptoUtils.createTotallyRandomIV(); //generate the initialization vector
@@ -77,12 +77,12 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 							case Request.SEND_FILE: //can I pls send a file to the server
 								String fileName = new String(clientInput.getBytesDecrypted());
 								
-								new FileReceiver(Main.getFileServer().accept(), IV, secretKey, this, "/home/erdlof/workspace/" + fileName).start(); //TODO CONFIG FILES for the standard file destination
+								new FileReceiver(Main.getFileServer().accept(), IV, secretKey, this, "/home/erdlof/workspace/" + fileName, 1024).start(); //TODO CONFIG FILES for the standard file destination
 								break;
 							case Request.GET_FILE:
 								long fileID = CryptoUtils.byteArrayToLong(clientInput.getBytesDecrypted());
 								
-								new FileSender(Main.getFileServer().accept(), IV, secretKey, this, Main.getFileByID(fileID)).start();
+								new FileSender(Main.getFileServer().accept(), IV, secretKey, this, Main.getFileByID(fileID), 1024).start();
 								break;
 							case Request.REGULAR_DISCONNECT:
 								System.out.println("Regular disconnect.");

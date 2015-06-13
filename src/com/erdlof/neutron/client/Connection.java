@@ -200,7 +200,7 @@ public class Connection extends Thread {
 		try {
 			sendData(Request.SEND_FILE, file.getName().getBytes());
 			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Uploading file...", "", 0, 0);
-			new FileSender(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, file).start();
+			new FileSender(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, file, 1024).start();
 		} catch (IOException e) {
 		}
 	}
@@ -209,7 +209,7 @@ public class Connection extends Thread {
 		try {
 			sendData(Request.GET_FILE, CryptoUtils.longToByteArray(fileID));
 			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Downloading file...", "", 0, 0);
-			new FileReceiver(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, path).start();
+			new FileReceiver(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, path, 1024).start();
 		} catch (IOException e) {
 		}
 	}

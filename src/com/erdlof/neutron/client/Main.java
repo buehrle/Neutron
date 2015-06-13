@@ -14,6 +14,7 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
+import com.erdlof.neutron.swing.HintTextField;
 import com.erdlof.neutron.util.Request;
 import com.erdlof.neutron.util.UnwrappedObject;
 
@@ -80,7 +81,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		style = new SimpleAttributeSet();
 		lm = new DefaultListModel<String>();
 		partners = new ArrayList<Partner>();
-
+		fileList = new FileList(this);
 		fileChooser = new JFileChooser();
 		
 		try {
@@ -104,7 +105,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		int y = (int) (toolkit.getScreenSize().height - this.getHeight()) / 2;
 		
 		setLocation(x, y);
-		fileList = new FileList(this, getLocation());
 		
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); //we do this on our own
 		this.setMinimumSize(new Dimension(700, 400));
@@ -137,11 +137,11 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		getContentPane().add(loginContainer, BorderLayout.EAST);
 		loginContainer.setLayout(new MigLayout("", "[200px,grow,left]", "[19px][19px][][][grow][][][][][][][][][]"));
 		
-		serverAdress = new JTextField();
+		serverAdress = new HintTextField("Server address");
 		loginContainer.add(serverAdress, "cell 0 0,growx,aligny bottom");
 		serverAdress.setColumns(20);
 		
-		clientName = new JTextField();
+		clientName = new HintTextField("Nickname");
 		loginContainer.add(clientName, "cell 0 1,growx,aligny bottom");
 		clientName.setColumns(20);
 		
@@ -339,16 +339,19 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == getbtnConnect()) {
 			if (connection == null) {
-				connection = new Connection(keyPair, getClientName().getText(), getServerAdress().getText(), this);
-				connection.start();
-				getlblErrorDisplay().setText("");
-				
-				getbtnConnect().setText("Disconnect");
-				getlblStatus().setText("Connecting...");
+				if (!getClientName().getText().isEmpty() && !getServerAdress().getText().isEmpty()) {
+					connection = new Connection(keyPair, getClientName().getText(), getServerAdress().getText(), this);
+					connection.start();
+					getlblErrorDisplay().setText("");
+					
+					getbtnConnect().setText("Disconnect");
+					getlblStatus().setText("Connecting...");
+				}
 			} else {
 				connection.disconnect();
 			}
 		} else if (e.getSource() == getBtnShowFiles()) {
+			fileList.setLocationRelativeTo(this);
 			fileList.setVisible(true);
 		}
 	}

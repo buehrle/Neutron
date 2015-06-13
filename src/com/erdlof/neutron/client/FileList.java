@@ -2,7 +2,6 @@ package com.erdlof.neutron.client;
 
 import javax.swing.JFrame;
 import java.awt.BorderLayout;
-import java.awt.Point;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JPanel;
@@ -26,7 +25,7 @@ public class FileList extends JFrame implements ActionListener {
 	private JButton btnUploadFile;
 	private JButton btnDownloadFile;
 	
-	public FileList(FileSelectorListener listener, Point startLoc) {
+	public FileList(FileSelectorListener listener) {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); //make it look beautiful.
 		} catch (Exception e) {
@@ -40,7 +39,6 @@ public class FileList extends JFrame implements ActionListener {
 		setResizable(false);
 		setSize(301,437);
 		getContentPane().setLayout(new BorderLayout(0, 0));
-		setLocation(startLoc);
 		
 		JPanel listContainer = new JPanel();
 		listContainer.setBorder(new TitledBorder(null, "Files on the server", TitledBorder.LEADING, TitledBorder.TOP, null, null));
