@@ -35,7 +35,7 @@ public class FileList extends JFrame implements ActionListener {
 		
 		setTitle("Files");
 		setType(Type.UTILITY);
-		setAlwaysOnTop(true);
+		setAlwaysOnTop(false);
 		setResizable(false);
 		setSize(301,437);
 		getContentPane().setLayout(new BorderLayout(0, 0));
