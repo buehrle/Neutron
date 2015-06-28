@@ -6,10 +6,16 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.net.URISyntaxException;
+import java.nio.channels.FileLock;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.swing.JFrame;
 import javax.swing.UIManager;
@@ -35,6 +41,10 @@ import net.miginfocom.swing.MigLayout;
 import javax.swing.JLabel;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import javax.swing.JScrollPane;
 import javax.swing.text.BadLocationException;
@@ -51,6 +61,12 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private Connection connection;
 	private Toolkit toolkit;
 	private volatile List<Partner> partners;
+	private KeyPairGenerator generator;
+	private KeyPair keyPair;
+	private Properties properties;
+	private File settings;
+	private FileInputStream settingsInputStream;
+	private FileOutputStream settingsOutputStream;
 	
 	private JTextField messageInput;
 	private JTextField serverAdress;
@@ -59,13 +75,11 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private JButton btnConnect;
 	private JLabel lblStatus;
 	private JTextPane messageProvideBox;
-	private KeyPairGenerator generator;
 	private JLabel lblErrorDisplay;
 	private JPanel messageContainerPanel;
 	private JScrollPane scrollPane;
 	private StyledDocument mainMessages;
 	private SimpleAttributeSet style;
-	private KeyPair keyPair;
 	private JPanel clientListContainer;
 	private JList<String> clientList;
 	private DefaultListModel<String> lm;
@@ -77,7 +91,21 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		new Main();
 	}
 	
-	public Main() { //set up the window
+	public Main() { //set up the window and defaultilize properties
+		properties = new Properties();
+		
+		try {
+			settings = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "settings.xml");
+			Files.copy(getClass().getResourceAsStream("/com/erdlof/neutron/client/default_settings.xml"), settings.toPath());
+			
+			settingsInputStream = new FileInputStream(settings);
+			settingsOutputStream = new FileOutputStream(settings);
+			
+			properties.loadFromXML(settingsInputStream);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		style = new SimpleAttributeSet();
 		lm = new DefaultListModel<String>();
 		partners = new ArrayList<Partner>();
@@ -378,6 +406,13 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 
 	@Override
 	public void windowClosing(WindowEvent arg0) {
+		try {
+			settingsInputStream.close();
+			settingsOutputStream.close();
+		} catch (Exception e) {
+			
+		}
+		
 		if (connection != null) connection.disconnect();
 		fileList.dispose();
 		dispose();
@@ -396,8 +431,9 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	public void windowOpened(WindowEvent arg0) {}
 
 	@Override
-	public void downloadFile(long ID) {
+	public void downloadFile(long ID, String name) {
 		if (connection != null) {
+			fileChooser.setCurrentDirectory(new File(fileChooser.getCurrentDirectory().getPath() + File.pathSeparator + name));
 			int returnVal = fileChooser.showSaveDialog(this);
 			
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -420,5 +456,10 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 	}
 
+	public Properties getproperties() {
+		synchronized(properties) {
+			return properties;
+		}
+	}
 	
 }

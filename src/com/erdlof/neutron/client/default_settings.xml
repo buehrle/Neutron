@@ -6,5 +6,4 @@
 	<entry key="DefaultFilesharingPort">12346</entry>
 	<entry key="DefaultCommunicationPort">12345</entry>
 	<entry key="DefaultTempFileDirectory"></entry>
-	<entry key="IPBlacklist"></entry>
 </properties>

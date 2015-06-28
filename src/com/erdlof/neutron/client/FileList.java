@@ -83,10 +83,14 @@ public class FileList extends JFrame implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnDownloadFile) {
-			int selectionIndex = list.getSelectedIndex();
-			
-			if (selectionIndex != -1) {
-				listener.downloadFile(lm.get(selectionIndex).getID());
+			if (list.isSelectionEmpty()) {
+				int selectionIndex = list.getSelectedIndex();
+				
+				SharedFile selected = lm.get(selectionIndex);
+				
+				if (selectionIndex != -1) {
+					listener.downloadFile(selected.getID(), selected.getName());
+				}
 			}
 		} else if (e.getSource() == btnUploadFile) {
 			listener.uploadFile();
