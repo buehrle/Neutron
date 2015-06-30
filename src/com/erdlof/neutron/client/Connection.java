@@ -18,7 +18,6 @@ import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
-import com.erdlof.neutron.util.UnwrappedObject;
 
 public class Connection extends Thread {
 	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
@@ -107,6 +106,7 @@ public class Connection extends Thread {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void init() { //pretty much the same as in server.Client.java
 		try {
 			client = new Socket(serverAdress, 12345);
@@ -119,12 +119,12 @@ public class Connection extends Thread {
 			
 			IV = serverInput.getBytes();
 
-			unwrapCipher = Cipher.getInstance("RSA");
+			unwrapCipher = Cipher.getInstance("RSA", "BC");
 			unwrapCipher.init(Cipher.UNWRAP_MODE, keyPair.getPrivate());
 			secretKey = (SecretKey) unwrapCipher.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
 			
-			inputCipher = Cipher.getInstance(ALGORITHM_PADDING);
-			outputCipher = Cipher.getInstance(ALGORITHM_PADDING);
+			inputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC");
+			outputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC");
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			
@@ -138,21 +138,10 @@ public class Connection extends Thread {
 			int nameRequest = serverInput.getRequest();
 			
 			if (nameRequest == Request.LEGAL_NAME) {
-				byte[] wrappedPartnerList = serverInput.getBytesDecrypted();
-				byte[] wrappedFileList = serverInput.getBytesDecrypted();
-				
-				List<Partner> partnerList = new ArrayList<Partner>();
-				List<SharedFile> sharedFileList = new ArrayList<SharedFile>();
-				
-				for (UnwrappedObject partner : CommunicationUtils.unwrapList(wrappedPartnerList)) {
-					partnerList.add(new Partner(partner));
-				}
-				
-				for (UnwrappedObject sharedFile : CommunicationUtils.unwrapList(wrappedFileList)) {
-					sharedFileList.add(new SharedFile(sharedFile));
-				}
-				
-				listener.connectionEstablished(partnerList, sharedFileList);
+				List<SharedAssociation> partnerList = (ArrayList<SharedAssociation>) CommunicationUtils.byteArrayToObject(serverInput.getBytesDecrypted());
+				List<SharedAssociation> fileList = (ArrayList<SharedAssociation>) CommunicationUtils.byteArrayToObject(serverInput.getBytesDecrypted());
+			
+				listener.connectionEstablished(partnerList, fileList);
 			} else {
 				listener.setDisconnectRequest(nameRequest);
 				performShutdown();

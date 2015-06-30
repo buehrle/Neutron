@@ -3,7 +3,7 @@ package com.erdlof.neutron.client;
 import java.util.List;
 
 public interface ClientListener {
-	public void connectionEstablished(List<Partner> partners, List<SharedFile> filesOnServer);
+	public void connectionEstablished(List<SharedAssociation> partners, List<SharedAssociation> filesOnServer);
 	public void connectionFailed();
 	public void disconnected();
 	public void setDisconnectRequest(int request);

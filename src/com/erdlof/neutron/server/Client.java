@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.PublicKey;
+import java.util.ArrayList;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import com.erdlof.neutron.client.SharedAssociation;
 import com.erdlof.neutron.filesharing.FileReceiver;
 import com.erdlof.neutron.filesharing.FileReceivingListener;
 import com.erdlof.neutron.filesharing.FileSender;
@@ -20,9 +22,9 @@ import com.erdlof.neutron.util.CheckUtils;
 import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
-import com.erdlof.neutron.util.Wrappable;
 
-public class Client implements Runnable, Wrappable, FileReceivingListener, FileSendingListener {
+@SuppressWarnings("serial")
+public class Client extends SharedAssociation implements Runnable, FileReceivingListener, FileSendingListener {
 	private static final int MAX_COUNTS_UNTIL_TIMEOUT = 1000;
 	private static final String ALGORITHM_PADDING = "AES/CBC/PKCS5PADDING";
 
@@ -35,22 +37,21 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 	private Cipher outputCipher;
 	private Cipher inputCipher;
 	
-	private String clientName;
-	private long clientID;
 	private PublicKey publicKey; //the CLIENT'S public key
 	private SecretKey secretKey;
 	
 	private byte[] IV;
 	
 	public Client(Socket clientSocket, long clientID) throws IOException {
-		this.clientID = clientID;
+		super(clientID, "");
+		
 		this.clientSocket = clientSocket;
 		timeoutCounter = 0;
 		
 		try {
-			KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+			KeyGenerator keyGen = KeyGenerator.getInstance("AES", "BC");
 			
-			keyGen.init(128); //the Oracle-JRE rejects keys with a length of > 128 by default, because of some terrible US-laws. FUCK
+			keyGen.init(256);
 			secretKey = keyGen.generateKey(); //generate the AES-key we will use to communicate
 			
 			IV = CryptoUtils.createTotallyRandomIV(); //generate the initialization vector
@@ -72,7 +73,7 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 						switch (request) { //what does the client want???
 							case Request.SEND_TEXT:
 								byte[] tempData = clientInput.getBytesDecrypted();
-								if (tempData.length > 0) Main.sendToAllClients(request, clientID, tempData);
+								if (tempData.length > 0) Main.sendToAllClients(request, super.getID(), tempData);
 								break;
 							case Request.SEND_FILE: //can I pls send a file to the server
 								String fileName = new String(clientInput.getBytesDecrypted());
@@ -133,32 +134,32 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 			
 			publicKey = CryptoUtils.getPublicKeyFromEncoded(clientInput.getBytes()); // get the client's public key from a byte array
 	
-			wrapCipher = Cipher.getInstance("RSA");
+			wrapCipher = Cipher.getInstance("RSA", "BC");
 			wrapCipher.init(Cipher.WRAP_MODE, publicKey);
 			byte[] wrappedKey = wrapCipher.wrap(secretKey); //we wrap the AES-key with a public RSA-key from the client to transfer it securely
 			clientOutput.sendBytes(wrappedKey);
 			
 			clientOutput.sendBytes(IV); //it does what it seems to do.
 	
-			inputCipher = Cipher.getInstance(ALGORITHM_PADDING); //the cipher for decrypting data from the client
-			outputCipher = Cipher.getInstance(ALGORITHM_PADDING); //encrypting
+			inputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC"); //the cipher for decrypting data from the client
+			outputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC"); //encrypting
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			
 			clientInput.initCipher(inputCipher); //init the streams with the ciphers
 			clientOutput.initCipher(outputCipher);
 			
-			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(clientID)); //send the ID to the client
+			clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(super.getID())); //send the ID to the client
 			
-			clientName = new String(clientInput.getBytesDecrypted());
+			super.setName(new String(clientInput.getBytesDecrypted()));
 			
-			if (CheckUtils.isProperNickname(clientName)) {
+			if (CheckUtils.isProperNickname(super.getName())) {
 				clientOutput.sendRequest(Request.LEGAL_NAME);
-				clientOutput.sendBytesEncrypted(CommunicationUtils.wrapList(Main.getActiveClients()));
-				clientOutput.sendBytesEncrypted(CommunicationUtils.wrapList(Main.getSharedFiles()));
+				clientOutput.sendBytesEncrypted(CommunicationUtils.serializableObjectToByteArray(new ArrayList<SharedAssociation>(Main.getActiveClients())));
+				clientOutput.sendBytesEncrypted(CommunicationUtils.serializableObjectToByteArray(new ArrayList<SharedAssociation>(Main.getSharedFiles())));
 				
 				Main.registerClient(this);
-				System.out.println("Just logged in: " + clientName);
+				System.out.println("Just logged in: " + super.getName());
 			} else {
 				clientOutput.sendRequest(Request.ILLEGAL_NAME);
 				performShutdown();
@@ -173,16 +174,6 @@ public class Client implements Runnable, Wrappable, FileReceivingListener, FileS
 		Thread.currentThread().interrupt();
 	}
 
-	@Override
-	public String getName() {
-		return clientName;
-	}
-
-	@Override
-	public long getID() {
-		return clientID;
-	}
-	
 	public void sendToClientFromID(int request, long senderID, byte[] data) { //the ID represents the SENDER of the data
 		try {
 			clientOutput.sendRequest(request);

@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.Security;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.erdlof.neutron.util.Request;
 
@@ -19,10 +21,12 @@ public class Main {
 	private static ServerSocket fileServer;
 	private static ExecutorService executor;
 	private static Random newIDCreator;
-	private static volatile List<Client> activeClients;
-	private static volatile List<SharedFile> sharedFiles;
+	private static volatile ArrayList<Client> activeClients;
+	private static volatile ArrayList<ServerFile> sharedFiles;
 	
 	public static void main(String[] args) {
+		Security.addProvider(new BouncyCastleProvider());
+		
 		try {
 			init();
 			System.out.println("Server started.");
@@ -43,7 +47,7 @@ public class Main {
 		executor = Executors.newCachedThreadPool();
 		newIDCreator = new Random();
 		activeClients = new ArrayList<Client>();
-		sharedFiles = new ArrayList<SharedFile>();
+		sharedFiles = new ArrayList<ServerFile>();
 	}
 	//the following methods could also be implemented in Client.java, but I like it that way, it's more clear
 	//there is only one intrinsic lock available, we want that
@@ -59,11 +63,11 @@ public class Main {
 		}
 	}
 	
-	public static synchronized List<Client> getActiveClients() {
+	public static synchronized ArrayList<Client> getActiveClients() {
 		return activeClients;
 	}
 	
-	public static synchronized List<SharedFile> getSharedFiles() {
+	public static synchronized ArrayList<ServerFile> getSharedFiles() {
 		return sharedFiles;
 	}
 	
@@ -81,12 +85,12 @@ public class Main {
 	
 	public static synchronized void registerFile(File file) {
 		long fileID = newIDCreator.nextLong();
-		getSharedFiles().add(new SharedFile(file, fileID));
+		getSharedFiles().add(new ServerFile(fileID, file));
 		sendToAllClients(Request.NEW_FILE, fileID, file.getName().getBytes());
 	}
 	
 	public static synchronized File getFileByID(long fileID) {
-		for (SharedFile file : getSharedFiles()) {
+		for (ServerFile file : getSharedFiles()) {
 			if (file.getID() == fileID) return file.getFile();
 		}
 		return null;

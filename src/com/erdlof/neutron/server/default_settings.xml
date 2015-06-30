@@ -3,9 +3,7 @@
 
 <properties>
 	<comment/>
-	<entry key="CustomPublicKey"/>
-	<entry key="UseCustomCertificate">false</entry>
 	<entry key="DefaultFilesharingPort">12346</entry>
 	<entry key="DefaultCommunicationPort">12345</entry>
-	<entry key="CustomPrivateKey"/>
+	<entry key="DefaultTempFileDirectory"></entry>
 </properties>

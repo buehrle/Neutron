@@ -6,14 +6,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.net.URISyntaxException;
-import java.nio.channels.FileLock;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.util.ArrayList;
+import java.security.Security;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -21,8 +17,8 @@ import javax.swing.JFrame;
 import javax.swing.UIManager;
 
 import com.erdlof.neutron.swing.HintTextField;
+import com.erdlof.neutron.util.FileUtils;
 import com.erdlof.neutron.util.Request;
-import com.erdlof.neutron.util.UnwrappedObject;
 
 import javax.swing.JMenuBar;
 import javax.swing.JButton;
@@ -43,8 +39,6 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 import javax.swing.JScrollPane;
 import javax.swing.text.BadLocationException;
@@ -55,12 +49,13 @@ import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.TitledBorder;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 public class Main extends JFrame implements ClientListener, ActionListener, KeyListener, WindowListener, FileSelectorListener {
 	private static final long serialVersionUID = 527099896996818525L;
 	
 	private Connection connection;
 	private Toolkit toolkit;
-	private volatile List<Partner> partners;
 	private KeyPairGenerator generator;
 	private KeyPair keyPair;
 	private Properties properties;
@@ -81,8 +76,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private StyledDocument mainMessages;
 	private SimpleAttributeSet style;
 	private JPanel clientListContainer;
-	private JList<String> clientList;
-	private DefaultListModel<String> lm;
+	private JList<SharedAssociation> clientList;
+	private DefaultListModel<SharedAssociation> lm;
 	private JFileChooser fileChooser;
 	private JButton btnShowFiles;
 	private FileList fileList;
@@ -92,14 +87,18 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	}
 	
 	public Main() { //set up the window and defaultilize properties
+		Security.addProvider(new BouncyCastleProvider());
+		
 		properties = new Properties();
 		
 		try {
 			settings = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "settings.xml");
-			Files.copy(getClass().getResourceAsStream("/com/erdlof/neutron/client/default_settings.xml"), settings.toPath());
+			settings.createNewFile();
 			
 			settingsInputStream = new FileInputStream(settings);
 			settingsOutputStream = new FileOutputStream(settings);
+			
+			FileUtils.copyStream(getClass().getResourceAsStream("/com/erdlof/neutron/client/default_settings.xml"), settingsOutputStream);
 			
 			properties.loadFromXML(settingsInputStream);
 		} catch (Exception e) {
@@ -107,13 +106,12 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 		
 		style = new SimpleAttributeSet();
-		lm = new DefaultListModel<String>();
-		partners = new ArrayList<Partner>();
+		lm = new DefaultListModel<SharedAssociation>();
 		fileList = new FileList(this);
 		fileChooser = new JFileChooser();
 		
 		try {
-			generator = KeyPairGenerator.getInstance("RSA");
+			generator = KeyPairGenerator.getInstance("RSA", "BC");
 		} catch (Exception e) {
 		}
 		generator.initialize(2048);
@@ -188,7 +186,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		loginContainer.add(clientListContainer, "cell 0 4 1 10,grow");
 		clientListContainer.setLayout(new CardLayout(0, 0));
 		
-		clientList = new JList<String>(lm);
+		clientList = new JList<SharedAssociation>(lm);
 		clientList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		clientListContainer.add(clientList, "name_11791777654180");
 		
@@ -223,7 +221,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		}
 	}
 	
-	private DefaultListModel<String> getClientListModel() {
+	private DefaultListModel<SharedAssociation> getClientListModel() {
 		synchronized (clientList) {
 			return lm;
 		}
@@ -232,18 +230,6 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private JButton getbtnConnect() {
 		synchronized (btnConnect) {
 			return btnConnect;
-		}
-	}
-	
-	private void setPartners(List<Partner> partners) {
-		synchronized (this.partners) {
-			this.partners = partners;
-		}
-	}
-	
-	private List<Partner> getPartners() {
-		synchronized (partners) {
-			return partners;
 		}
 	}
 
@@ -272,8 +258,8 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	}
 	
 	@Override
-	public void connectionEstablished(List<Partner> partners, List<SharedFile> filesOnServer) { //is called when the connection has been successfully established
-		setPartners(partners);
+	public void connectionEstablished(List<SharedAssociation> partners, List<SharedAssociation> filesOnServer) { //is called when the connection has been successfully established
+		clientList.setListData((SharedAssociation[]) partners.toArray());
 		fileList.setFiles(filesOnServer);
 		
 		getlblStatus().setText("Connected.");
@@ -295,36 +281,24 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	}
 	
 	public void textMessage(long senderID, byte[] message) {
-		appendText("["  + UnwrappedObject.getUnwrappedObjectByID(partners, senderID).getName() + "] " + new String(message), Color.BLACK);
+		appendText("["  + SharedAssociation.getSharedAssociationByID(Arrays.asList((SharedAssociation[]) getClientListModel().toArray()), senderID).getName() + "] " + new String(message), Color.BLACK);
 	}
 	
 	public void clientConnected(long senderID, byte[] name) {
 		appendText(new String(name) + " just logged in.", Color.RED);
-		getPartners().add(new Partner(senderID, new String(name)));
-		renderClients();
+		getClientListModel().addElement(new SharedAssociation(senderID, new String(name)));
 	}
 	
 	public void clientDisconnected(long senderID) {
-		UnwrappedObject tempPartner = UnwrappedObject.getUnwrappedObjectByID(partners, senderID);
+		SharedAssociation tempPartner = SharedAssociation.getSharedAssociationByID(Arrays.asList((SharedAssociation[]) getClientListModel().toArray()), senderID);
 		appendText(tempPartner.getName() + " just logged out.", Color.RED);
-		getPartners().remove(tempPartner);
-		renderClients();
+		getClientListModel().removeElement(tempPartner);
 	}
 	
 	@Override
 	public void newFile(long fileID, byte[] name) {
 		appendText("A new file was uploaded: " + new String(name), Color.BLUE);
-		fileList.newFile(new SharedFile(fileID, new String(name)));
-	}
-	
-	private void renderClients() {
-		synchronized (clientList) {
-			lm.removeAllElements();
-		
-			for (UnwrappedObject partner : getPartners()) {
-				lm.addElement(partner.getName());
-			}
-		}
+		fileList.newFile(new SharedAssociation(fileID, new String(name)));
 	}
 	
 	private void appendText(String text, Color textColor) {

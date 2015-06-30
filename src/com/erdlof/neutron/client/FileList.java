@@ -20,8 +20,8 @@ import javax.swing.ListSelectionModel;
 public class FileList extends JFrame implements ActionListener {
 	private static final long serialVersionUID = -4909632870438142582L;
 	private FileSelectorListener listener;
-	private JList<SharedFile> list;
-	private DefaultListModel<SharedFile> lm;
+	private JList<SharedAssociation> list;
+	private DefaultListModel<SharedAssociation> lm;
 	private JButton btnUploadFile;
 	private JButton btnDownloadFile;
 	
@@ -45,8 +45,8 @@ public class FileList extends JFrame implements ActionListener {
 		getContentPane().add(listContainer, BorderLayout.CENTER);
 		listContainer.setLayout(new CardLayout(5, 5));
 		
-		lm = new DefaultListModel<SharedFile>();
-		list = new JList<SharedFile>(lm);
+		lm = new DefaultListModel<SharedAssociation>();
+		list = new JList<SharedAssociation>(lm);
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		listContainer.add(list, "name_14690395186515");
 		
@@ -64,17 +64,17 @@ public class FileList extends JFrame implements ActionListener {
 		this.setVisible(false);
 	}
 	
-	public void newFile(SharedFile file) {
+	public void newFile(SharedAssociation file) {
 		synchronized(lm){
 			lm.addElement(file);
 		}
 	}
 	
-	public void setFiles(List<SharedFile> files) {
+	public void setFiles(List<SharedAssociation> files) {
 		synchronized (lm) {
 			lm.removeAllElements();
 			
-			for (SharedFile file : files) {
+			for (SharedAssociation file : files) {
 				lm.addElement(file);
 			}
 		}
@@ -86,7 +86,7 @@ public class FileList extends JFrame implements ActionListener {
 			if (list.isSelectionEmpty()) {
 				int selectionIndex = list.getSelectedIndex();
 				
-				SharedFile selected = lm.get(selectionIndex);
+				SharedAssociation selected = lm.get(selectionIndex);
 				
 				if (selectionIndex != -1) {
 					listener.downloadFile(selected.getID(), selected.getName());
