@@ -51,7 +51,7 @@ import javax.swing.border.TitledBorder;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-public class Main extends JFrame implements ClientListener, ActionListener, KeyListener, WindowListener, FileSelectorListener {
+public class ClientMain extends JFrame implements ClientListener, ActionListener, KeyListener, WindowListener, FileSelectorListener {
 	private static final long serialVersionUID = 527099896996818525L;
 	
 	private Connection connection;
@@ -83,16 +83,16 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	private FileList fileList;
 	
 	public static void main(String[] args) {
-		new Main();
+		new ClientMain();
 	}
 	
-	public Main() { //set up the window and defaultilize properties
+	public ClientMain() { //set up the window and defaultilize properties
 		Security.addProvider(new BouncyCastleProvider());
 		
 		properties = new Properties();
 		
 		try {
-			settings = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "settings.xml");
+			settings = new File(ClientMain.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "settings.xml");
 			settings.createNewFile();
 			
 			settingsInputStream = new FileInputStream(settings);
@@ -111,7 +111,7 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 		fileChooser = new JFileChooser();
 		
 		try {
-			generator = KeyPairGenerator.getInstance("RSA", "BC");
+			generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
 		} catch (Exception e) {
 		}
 		generator.initialize(2048);
@@ -259,7 +259,10 @@ public class Main extends JFrame implements ClientListener, ActionListener, KeyL
 	
 	@Override
 	public void connectionEstablished(List<SharedAssociation> partners, List<SharedAssociation> filesOnServer) { //is called when the connection has been successfully established
-		clientList.setListData((SharedAssociation[]) partners.toArray());
+		for (SharedAssociation partner : partners) {
+			lm.addElement(partner);
+		}
+		
 		fileList.setFiles(filesOnServer);
 		
 		getlblStatus().setText("Connected.");

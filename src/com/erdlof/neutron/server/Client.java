@@ -11,6 +11,8 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import com.erdlof.neutron.client.SharedAssociation;
 import com.erdlof.neutron.filesharing.FileReceiver;
 import com.erdlof.neutron.filesharing.FileReceivingListener;
@@ -49,9 +51,9 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 		timeoutCounter = 0;
 		
 		try {
-			KeyGenerator keyGen = KeyGenerator.getInstance("AES", "BC");
+			KeyGenerator keyGen = KeyGenerator.getInstance("AES", BouncyCastleProvider.PROVIDER_NAME);
 			
-			keyGen.init(256);
+			keyGen.init(128);
 			secretKey = keyGen.generateKey(); //generate the AES-key we will use to communicate
 			
 			IV = CryptoUtils.createTotallyRandomIV(); //generate the initialization vector
@@ -134,15 +136,15 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 			
 			publicKey = CryptoUtils.getPublicKeyFromEncoded(clientInput.getBytes()); // get the client's public key from a byte array
 	
-			wrapCipher = Cipher.getInstance("RSA", "BC");
+			wrapCipher = Cipher.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
 			wrapCipher.init(Cipher.WRAP_MODE, publicKey);
 			byte[] wrappedKey = wrapCipher.wrap(secretKey); //we wrap the AES-key with a public RSA-key from the client to transfer it securely
 			clientOutput.sendBytes(wrappedKey);
 			
 			clientOutput.sendBytes(IV); //it does what it seems to do.
 	
-			inputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC"); //the cipher for decrypting data from the client
-			outputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC"); //encrypting
+			inputCipher = Cipher.getInstance(ALGORITHM_PADDING, BouncyCastleProvider.PROVIDER_NAME); //the cipher for decrypting data from the client
+			outputCipher = Cipher.getInstance(ALGORITHM_PADDING, BouncyCastleProvider.PROVIDER_NAME); //encrypting
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			
@@ -165,6 +167,7 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 				performShutdown();
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			System.out.println("Unexpected error while initializing connection.");
 			performShutdown(); //ask the current loop to exit and close all resources
 		}

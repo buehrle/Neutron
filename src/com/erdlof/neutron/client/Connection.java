@@ -11,6 +11,8 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import com.erdlof.neutron.filesharing.FileReceiver;
 import com.erdlof.neutron.filesharing.FileSender;
 import com.erdlof.neutron.streams.BetterDataInputStream;
@@ -119,12 +121,12 @@ public class Connection extends Thread {
 			
 			IV = serverInput.getBytes();
 
-			unwrapCipher = Cipher.getInstance("RSA", "BC");
+			unwrapCipher = Cipher.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
 			unwrapCipher.init(Cipher.UNWRAP_MODE, keyPair.getPrivate());
 			secretKey = (SecretKey) unwrapCipher.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
 			
-			inputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC");
-			outputCipher = Cipher.getInstance(ALGORITHM_PADDING, "BC");
+			inputCipher = Cipher.getInstance(ALGORITHM_PADDING, BouncyCastleProvider.PROVIDER_NAME);
+			outputCipher = Cipher.getInstance(ALGORITHM_PADDING, BouncyCastleProvider.PROVIDER_NAME);
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(IV));
 			
