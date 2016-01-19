@@ -1,7 +1,6 @@
 package com.erdlof.neutron.client;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 public class SharedAssociation implements Serializable {
 	private static final long serialVersionUID = 6958109323575540981L;
@@ -30,8 +29,8 @@ public class SharedAssociation implements Serializable {
 		return name;
 	}
 	
-	public static final <T extends SharedAssociation> T getSharedAssociationByID(Collection<? extends T> collection, long ID) {
-		for (T item : collection) {
+	public static final SharedAssociation getSharedAssociationByID(SharedAssociation[] list, long ID) {
+		for (SharedAssociation item : list) {
 			if (item.getID() == ID) return item;
 		}
 		

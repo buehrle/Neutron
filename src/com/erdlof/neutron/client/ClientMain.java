@@ -1,11 +1,19 @@
 package com.erdlof.neutron.client;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.Security;
@@ -13,43 +21,32 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuBar;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.ListSelectionModel;
 import javax.swing.UIManager;
+import javax.swing.border.TitledBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.erdlof.neutron.swing.HintTextField;
 import com.erdlof.neutron.util.FileUtils;
 import com.erdlof.neutron.util.Request;
 
-import javax.swing.JMenuBar;
-import javax.swing.JButton;
-import java.awt.BorderLayout;
-
-import javax.swing.DefaultListModel;
-import javax.swing.JFileChooser;
-import javax.swing.JTextField;
-import javax.swing.JTextPane;
-import javax.swing.JPanel;
-
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.CardLayout;
 import net.miginfocom.swing.MigLayout;
-import javax.swing.JLabel;
-import java.awt.event.KeyEvent;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-
-import javax.swing.JScrollPane;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-import javax.swing.JList;
-import javax.swing.ListSelectionModel;
-import javax.swing.border.TitledBorder;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class ClientMain extends JFrame implements ClientListener, ActionListener, KeyListener, WindowListener, FileSelectorListener {
 	private static final long serialVersionUID = 527099896996818525L;
@@ -284,7 +281,7 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	}
 	
 	public void textMessage(long senderID, byte[] message) {
-		appendText("["  + SharedAssociation.getSharedAssociationByID(Arrays.asList((SharedAssociation[]) getClientListModel().toArray()), senderID).getName() + "] " + new String(message), Color.BLACK);
+		appendText("["  + SharedAssociation.getSharedAssociationByID(Arrays.copyOf(getClientListModel().toArray(), getClientListModel().toArray().length, SharedAssociation[].class), senderID).getName() + "] " + new String(message), Color.BLACK);
 	}
 	
 	public void clientConnected(long senderID, byte[] name) {
@@ -293,7 +290,7 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	}
 	
 	public void clientDisconnected(long senderID) {
-		SharedAssociation tempPartner = SharedAssociation.getSharedAssociationByID(Arrays.asList((SharedAssociation[]) getClientListModel().toArray()), senderID);
+		SharedAssociation tempPartner = SharedAssociation.getSharedAssociationByID(Arrays.copyOf(getClientListModel().toArray(), getClientListModel().toArray().length, SharedAssociation[].class), senderID);
 		appendText(tempPartner.getName() + " just logged out.", Color.RED);
 		getClientListModel().removeElement(tempPartner);
 	}

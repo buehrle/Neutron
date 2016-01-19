@@ -53,7 +53,7 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 		try {
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES", BouncyCastleProvider.PROVIDER_NAME);
 			
-			keyGen.init(128);
+			keyGen.init(256);
 			secretKey = keyGen.generateKey(); //generate the AES-key we will use to communicate
 			
 			IV = CryptoUtils.createTotallyRandomIV(); //generate the initialization vector
