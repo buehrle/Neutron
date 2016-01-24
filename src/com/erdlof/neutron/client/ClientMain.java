@@ -17,8 +17,8 @@ import java.io.FileOutputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
 import javax.swing.DefaultListModel;
@@ -255,7 +255,7 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	}
 	
 	@Override
-	public void connectionEstablished(List<SharedAssociation> partners, List<SharedAssociation> filesOnServer) { //is called when the connection has been successfully established
+	public void connectionEstablished(ArrayList<SharedAssociation> partners, ArrayList<SharedAssociation> filesOnServer) { //is called when the connection has been successfully established
 		for (SharedAssociation partner : partners) {
 			lm.addElement(partner);
 		}

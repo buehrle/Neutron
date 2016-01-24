@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.PublicKey;
-import java.util.ArrayList;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -21,7 +20,6 @@ import com.erdlof.neutron.filesharing.FileSendingListener;
 import com.erdlof.neutron.streams.BetterDataInputStream;
 import com.erdlof.neutron.streams.BetterDataOutputStream;
 import com.erdlof.neutron.util.CheckUtils;
-import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
@@ -44,11 +42,15 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 	
 	private byte[] IV;
 	
-	public Client(Socket clientSocket, long clientID) throws IOException {
+	private ServerCoordinator coordinator;
+	
+	public Client(Socket clientSocket, long clientID, ServerCoordinator coordinator) throws IOException {
 		super(clientID, "");
 		
 		this.clientSocket = clientSocket;
 		timeoutCounter = 0;
+		
+		this.coordinator = coordinator;
 		
 		try {
 			KeyGenerator keyGen = KeyGenerator.getInstance("AES", BouncyCastleProvider.PROVIDER_NAME);
@@ -75,17 +77,17 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 						switch (request) { //what does the client want???
 							case Request.SEND_TEXT:
 								byte[] tempData = clientInput.getBytesDecrypted();
-								if (tempData.length > 0) Main.sendToAllClients(request, super.getID(), tempData);
+								if (tempData.length > 0) coordinator.sendToAllClients(request, super.getID(), tempData);
 								break;
 							case Request.SEND_FILE: //can I pls send a file to the server
 								String fileName = new String(clientInput.getBytesDecrypted());
 								
-								new FileReceiver(Main.getFileServer().accept(), IV, secretKey, this, "/home/erdlof/workspace/" + fileName, 1024).start(); //TODO CONFIG FILES for the standard file destination
+								new FileReceiver(coordinator.getFileServer().accept(), IV, secretKey, this, "/home/erdlof/workspace/" + fileName, 1024).start(); //TODO CONFIG FILES for the standard file destination
 								break;
 							case Request.GET_FILE:
 								long fileID = CryptoUtils.byteArrayToLong(clientInput.getBytesDecrypted());
 								
-								new FileSender(Main.getFileServer().accept(), IV, secretKey, this, Main.getFileByID(fileID), 1024).start();
+								new FileSender(coordinator.getFileServer().accept(), IV, secretKey, this, coordinator.getFileByID(fileID), 1024).start();
 								break;
 							case Request.REGULAR_DISCONNECT:
 								System.out.println("Regular disconnect.");
@@ -124,7 +126,7 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 				clientSocket.close();			
 			} catch (IOException e) {
 			} finally {
-				Main.unregisterClient(this); //the fact that this is executed on the end of the thread MAY cause an exception, but that's okay
+				coordinator.unregisterClient(this); //the fact that this is executed on the end of the thread MAY cause an exception, but that's okay
 			}
 		}
 	}
@@ -157,10 +159,21 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 			
 			if (CheckUtils.isProperNickname(super.getName())) {
 				clientOutput.sendRequest(Request.LEGAL_NAME);
-				clientOutput.sendBytesEncrypted(CommunicationUtils.serializableObjectToByteArray(new ArrayList<SharedAssociation>(Main.getActiveClients())));
-				clientOutput.sendBytesEncrypted(CommunicationUtils.serializableObjectToByteArray(new ArrayList<SharedAssociation>(Main.getSharedFiles())));
 				
-				Main.registerClient(this);
+				clientOutput.sendIntEncrypted(coordinator.getActiveClients().size());
+				clientOutput.sendIntEncrypted(coordinator.getSharedFiles().size());
+				
+				for (SharedAssociation client : coordinator.getActiveClients()) {
+					clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(client.getID()));
+					clientOutput.sendBytesEncrypted(client.getName().getBytes());
+				}
+				
+				for (SharedAssociation file : coordinator.getSharedFiles()) {
+					clientOutput.sendBytesEncrypted(CryptoUtils.longToByteArray(file.getID()));
+					clientOutput.sendBytesEncrypted(file.getName().getBytes());
+				}
+				
+				coordinator.registerClient(this);
 				System.out.println("Just logged in: " + super.getName());
 			} else {
 				clientOutput.sendRequest(Request.ILLEGAL_NAME);
@@ -204,7 +217,7 @@ public class Client extends SharedAssociation implements Runnable, FileReceiving
 
 	@Override
 	public void receivingCompleted(File file) {
-		Main.registerFile(file);
+		coordinator.registerFile(file);
 	}
 
 	@Override

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -17,7 +16,6 @@ import com.erdlof.neutron.filesharing.FileReceiver;
 import com.erdlof.neutron.filesharing.FileSender;
 import com.erdlof.neutron.streams.BetterDataInputStream;
 import com.erdlof.neutron.streams.BetterDataOutputStream;
-import com.erdlof.neutron.util.CommunicationUtils;
 import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
@@ -107,8 +105,7 @@ public class Connection extends Thread {
 			}
 		}
 	}
-	
-	@SuppressWarnings("unchecked")
+
 	public void init() { //pretty much the same as in server.Client.java
 		try {
 			client = new Socket(serverAdress, 12345);
@@ -140,9 +137,26 @@ public class Connection extends Thread {
 			int nameRequest = serverInput.getRequest();
 			
 			if (nameRequest == Request.LEGAL_NAME) {
-				List<SharedAssociation> partnerList = (ArrayList<SharedAssociation>) CommunicationUtils.byteArrayToObject(serverInput.getBytesDecrypted());
-				List<SharedAssociation> fileList = (ArrayList<SharedAssociation>) CommunicationUtils.byteArrayToObject(serverInput.getBytesDecrypted());
-			
+				int partnerLength = serverInput.getIntDecrypted();
+				int filesLength = serverInput.getIntDecrypted();
+				
+				ArrayList<SharedAssociation> partnerList = new ArrayList<SharedAssociation>();
+				ArrayList<SharedAssociation> fileList = new ArrayList<SharedAssociation>();
+				
+				while (partnerLength-- > 0) {
+					long id = CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted());
+					String name = new String(serverInput.getBytesDecrypted(), "UTF-8");
+					
+					partnerList.add(new SharedAssociation(id, name));
+				}
+				
+				while (filesLength-- > 0) {
+					long id = CryptoUtils.byteArrayToLong(serverInput.getBytesDecrypted());
+					String name = new String(serverInput.getBytesDecrypted(), "UTF-8");
+					
+					fileList.add(new SharedAssociation(id, name));
+				}
+				
 				listener.connectionEstablished(partnerList, fileList);
 			} else {
 				listener.setDisconnectRequest(nameRequest);

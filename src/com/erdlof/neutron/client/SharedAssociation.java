@@ -3,7 +3,7 @@ package com.erdlof.neutron.client;
 import java.io.Serializable;
 
 public class SharedAssociation implements Serializable {
-	private static final long serialVersionUID = 6958109323575540981L;
+	private static final long serialVersionUID = 5097382523217998521L;
 	private final long ID;
 	private String name;
 	
