@@ -83,7 +83,7 @@ public class FileList extends JFrame implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == btnDownloadFile) {
-			if (list.isSelectionEmpty()) {
+			if (!list.isSelectionEmpty()) {
 				int selectionIndex = list.getSelectedIndex();
 				
 				SharedAssociation selected = lm.get(selectionIndex);
