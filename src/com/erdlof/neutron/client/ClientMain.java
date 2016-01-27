@@ -43,6 +43,7 @@ import javax.swing.text.StyledDocument;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.erdlof.neutron.swing.HintTextField;
+import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.FileUtils;
 import com.erdlof.neutron.util.Request;
 
@@ -57,6 +58,9 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	private KeyPair keyPair;
 	private Properties properties;
 	private File settings;
+	private File dataLocation;
+	private File privateKeyFile;
+	private File publicKeyFile;
 	private FileInputStream settingsInputStream;
 	private FileOutputStream settingsOutputStream;
 	
@@ -84,12 +88,15 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	}
 	
 	public ClientMain() { //set up the window and defaultilize properties
+		CryptoUtils.removeCryptographyRestrictions();
 		Security.addProvider(new BouncyCastleProvider());
 		
 		properties = new Properties();
 		
 		try {
-			settings = new File(ClientMain.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath() + "settings.xml");
+			dataLocation = new File(System.getProperty("user.home") + File.separatorChar + ".neutron");
+			settings = new File(dataLocation, File.separatorChar + "settings.xml" + File.separatorChar);
+			settings.getParentFile().mkdirs();
 			settings.createNewFile();
 			
 			settingsInputStream = new FileInputStream(settings);
@@ -107,6 +114,16 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 		fileList = new FileList(this);
 		fileChooser = new JFileChooser();
 		
+		privateKeyFile = new File(dataLocation, File.separatorChar + properties.getProperty("PrivateKey") + File.separatorChar);
+		publicKeyFile = new File(dataLocation, File.separatorChar + properties.getProperty("PublicKey") + File.separatorChar);
+		boolean useExternalKeypair = Boolean.parseBoolean(properties.getProperty("SaveKeypair"));
+		
+		if (privateKeyFile.exists() && publicKeyFile.exists()) {
+			if (useExternalKeypair) {
+				keyPair = new KeyPair(new , arg1)
+			}
+		}
+		
 		try {
 			generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
 		} catch (Exception e) {
@@ -121,7 +138,7 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 		}
 		
 		toolkit = Toolkit.getDefaultToolkit();
-		setTitle("Neutron v0.1");
+		setTitle("Neutron");
 		setSize(901, 501);
 		
 		int x = (int) (toolkit.getScreenSize().width - this.getWidth()) / 2; //we want the window in the middle of our screen
@@ -341,8 +358,11 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == getbtnConnect()) {
 			if (connection == null) {
+				int textPort = Integer.parseInt(getProperties().getProperty("DefaultCommunicationPort"));
+				int filePort = Integer.parseInt(getProperties().getProperty("DefaultFilesharingPort"));
+				
 				if (!getClientName().getText().isEmpty() && !getServerAdress().getText().isEmpty()) {
-					connection = new Connection(keyPair, getClientName().getText(), getServerAdress().getText(), this);
+					connection = new Connection(keyPair, getClientName().getText(), getServerAdress().getText(), textPort, filePort, this);
 					connection.start();
 					getlblErrorDisplay().setText("");
 					
@@ -429,11 +449,8 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 			}
 		}
 	}
-
-	public Properties getproperties() {
-		synchronized(properties) {
-			return properties;
-		}
-	}
 	
+	private Properties getProperties() {
+		return properties;
+	}
 }

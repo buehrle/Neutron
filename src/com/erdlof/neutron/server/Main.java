@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
 public class Main implements ServerCoordinator {
@@ -25,12 +26,13 @@ public class Main implements ServerCoordinator {
 	private volatile ArrayList<ServerFile> sharedFiles;
 	
 	public static void main(String[] args) {
-		Security.addProvider(new BouncyCastleProvider());
-		
 		new Main();
 	}
 	
 	public Main() {
+		CryptoUtils.removeCryptographyRestrictions(); // OOOOOOOH ILLEGAL /o\
+		Security.addProvider(new BouncyCastleProvider());
+		
 		try {
 			init();
 			System.out.println("Server started.");

@@ -31,7 +31,7 @@ public class Connection extends Thread {
 	private Socket client;
 	
 	private SecretKey secretKey;
-	private KeyPair keyPair;
+	private final KeyPair keyPair;
 	private byte[] IV;
 	private byte[] wrappedKey;
 	
@@ -40,14 +40,19 @@ public class Connection extends Thread {
 	
 	private volatile int aliveCounter;
 	
-	private ClientListener listener;
-	private String serverAdress;
+	private final ClientListener listener;
+	private final String serverAdress;
 	
-	public Connection(KeyPair keyPair, String name, String serverAdress, ClientListener listener) {
+	private final int textPort, filePort;
+	
+	public Connection(KeyPair keyPair, String name, String serverAdress, int textPort, int filePort, ClientListener listener) {
 		this.listener = listener;
 		this.keyPair = keyPair;
 		this.name = name;
 		this.serverAdress = serverAdress;
+		
+		this.textPort = textPort;
+		this.filePort = filePort;
 		
 		aliveCounter = 0;
 	}
@@ -108,7 +113,7 @@ public class Connection extends Thread {
 
 	public void init() { //pretty much the same as in server.Client.java
 		try {
-			client = new Socket(serverAdress, 12345);
+			client = new Socket(serverAdress, textPort);
 			serverInput = new BetterDataInputStream(client.getInputStream());
 			serverOutput = new BetterDataOutputStream(client.getOutputStream());
 			
@@ -205,7 +210,7 @@ public class Connection extends Thread {
 		try {
 			sendData(Request.SEND_FILE, file.getName().getBytes());
 			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Uploading file...", "", 0, 0);
-			new FileSender(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, file, 1024).start();
+			new FileSender(new Socket(client.getInetAddress(), filePort), IV, secretKey, monitor, file, 1024).start();
 		} catch (IOException e) {
 		}
 	}
@@ -214,7 +219,7 @@ public class Connection extends Thread {
 		try {
 			sendData(Request.GET_FILE, CryptoUtils.longToByteArray(fileID));
 			FileshareIndicatorMonitor monitor = new FileshareIndicatorMonitor("Downloading file...", "", 0, 0);
-			new FileReceiver(new Socket(client.getInetAddress(), 12346), IV, secretKey, monitor, path, 1024).start();
+			new FileReceiver(new Socket(client.getInetAddress(), filePort), IV, secretKey, monitor, path, 1024).start();
 		} catch (IOException e) {
 		}
 	}
