@@ -88,7 +88,7 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	}
 	
 	public ClientMain() { //set up the window and defaultilize properties
-		CryptoUtils.removeCryptographyRestrictions();
+		//CryptoUtils.removeCryptographyRestrictions(); //only use this if you are sure that it is not illegal in your country.
 		Security.addProvider(new BouncyCastleProvider());
 		
 		properties = new Properties();

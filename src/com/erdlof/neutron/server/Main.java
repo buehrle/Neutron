@@ -30,7 +30,7 @@ public class Main implements ServerCoordinator {
 	}
 	
 	public Main() {
-		CryptoUtils.removeCryptographyRestrictions(); // OOOOOOOH ILLEGAL /o\
+		//CryptoUtils.removeCryptographyRestrictions(); //only use this if you are sure that it is not illegal in your country.
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
