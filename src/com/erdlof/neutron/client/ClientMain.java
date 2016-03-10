@@ -88,7 +88,7 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 	}
 	
 	public ClientMain() { //set up the window and defaultilize properties
-		//CryptoUtils.removeCryptographyRestrictions(); //only use this if you are sure that it is not illegal in your country.
+		CryptoUtils.removeCryptographyRestrictions();
 		Security.addProvider(new BouncyCastleProvider());
 		
 		properties = new Properties();
@@ -120,7 +120,7 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 		
 		if (privateKeyFile.exists() && publicKeyFile.exists()) {
 			if (useExternalKeypair) {
-				keyPair = new KeyPair(new , arg1)
+				//KeyPair.class.g
 			}
 		}
 		
@@ -360,6 +360,8 @@ public class ClientMain extends JFrame implements ClientListener, ActionListener
 			if (connection == null) {
 				int textPort = Integer.parseInt(getProperties().getProperty("DefaultCommunicationPort"));
 				int filePort = Integer.parseInt(getProperties().getProperty("DefaultFilesharingPort"));
+				System.out.println(textPort);
+				System.out.println(filePort);
 				
 				if (!getClientName().getText().isEmpty() && !getServerAdress().getText().isEmpty()) {
 					connection = new Connection(keyPair, getClientName().getText(), getServerAdress().getText(), textPort, filePort, this);

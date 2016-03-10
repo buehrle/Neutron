@@ -4,8 +4,8 @@
 <properties>
 	<comment/>
 	<entry key="SaveKeypair">true</entry>
-	<entry key="DefaultFilesharingPort">50192</entry>
-	<entry key="DefaultCommunicationPort">50193</entry>
+	<entry key="DefaultFilesharingPort">50193</entry>
+	<entry key="DefaultCommunicationPort">50192</entry>
 	<entry key="PrivateKey">private.aes</entry>
 	<entry key="PublicKey">public.aes</entry>
 </properties>

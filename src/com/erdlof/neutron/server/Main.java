@@ -16,8 +16,8 @@ import com.erdlof.neutron.util.CryptoUtils;
 import com.erdlof.neutron.util.Request;
 
 public class Main implements ServerCoordinator {
-	private final int CONST_PORT = 12345; //TODO: get this into an external config file
-	private final int CONST_FILE_PORT = 12346;
+	private final int CONST_PORT = 50192; //TODO: get this into an external config file
+	private final int CONST_FILE_PORT = 50193;
 	private ServerSocket server;
 	private ServerSocket fileServer;
 	private ExecutorService executor;
@@ -30,7 +30,7 @@ public class Main implements ServerCoordinator {
 	}
 	
 	public Main() {
-		//CryptoUtils.removeCryptographyRestrictions(); //only use this if you are sure that it is not illegal in your country.
+		CryptoUtils.removeCryptographyRestrictions(); // OOOOOOOH ILLEGAL /o\
 		Security.addProvider(new BouncyCastleProvider());
 		
 		try {
